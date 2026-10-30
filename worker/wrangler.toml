@@ -1,0 +1,8 @@
+name = "pedidos-doce-morada"
+main = "pedidos.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+SHOPIFY_SHOP = "SUA-LOJA.myshopify.com"
+ORIGEM = "https://moirecouk-cyber.github.io"
+API_VERSAO = "2026-07"

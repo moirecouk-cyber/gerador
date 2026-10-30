@@ -9,69 +9,89 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Pacifico&display=swap">
 <style>
 :root{
-  --bg:#f5f0e6; --surface:#fffdf8; --sunk:#efe8da; --fg:#1d2721; --muted:#686d61; --line:#e0d8c7;
-  --accent:#1f4d36; --accent-fg:#fbf7ee; --gold:#a8822f; --warn:#8a5a00; --warn-bg:#fbefd2; --err:#9b2c2c; --err-bg:#f8e1df; --ok:#2f6b47;
+  --bg:#0d1410; --surface:#151f19; --sunk:#101814; --fg:#efe8d8; --muted:#a6a392; --line:#273329; --line-gold:rgba(216,180,106,.22);
+  --accent:#d8b46a; --accent-fg:#1b1407; --green:#2f6b47; --gold:#e3c27a; --red:#a4353a;
+  --warn:#e8c06a; --warn-bg:#2e2715; --err:#f0a39b; --err-bg:#341c1a; --ok:#8cc7a3; color-scheme:dark;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#121814; --surface:#1a221d; --sunk:#151c18; --fg:#ebe5d7; --muted:#a39f91; --line:#2c3831;
-  --accent:#8cc7a3; --accent-fg:#0f1a14; --gold:#d8b46a; --warn:#e8c06a; --warn-bg:#2e2715; --err:#f0a39b; --err-bg:#331c1a; --ok:#8cc7a3; color-scheme:dark}}
-:root[data-theme="dark"]{
-  --bg:#121814; --surface:#1a221d; --sunk:#151c18; --fg:#ebe5d7; --muted:#a39f91; --line:#2c3831;
-  --accent:#8cc7a3; --accent-fg:#0f1a14; --gold:#d8b46a; --warn:#e8c06a; --warn-bg:#2e2715; --err:#f0a39b; --err-bg:#331c1a; --ok:#8cc7a3; color-scheme:dark}
 *{box-sizing:border-box}
 [hidden]{display:none!important}
-body{background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  background:radial-gradient(1100px 520px at 0% -10%,rgba(47,107,71,.28),transparent 60%),radial-gradient(900px 480px at 100% -5%,rgba(164,53,58,.16),transparent 60%),var(--bg);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 56px}
 .wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
-header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px;border-bottom:1px solid var(--line);padding-bottom:14px}
-h1{font:700 22px/1.2 Cinzel,Georgia,serif;letter-spacing:.04em;margin:0;text-wrap:balance}
-h1 small{display:block;font:500 12px/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
-#status{font-size:13px;color:var(--muted)}
-.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px;align-items:start}
+header{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding-bottom:16px;border-bottom:1px solid var(--line-gold)}
+h1{font:700 24px/1.15 Cinzel,Georgia,serif;letter-spacing:.05em;margin:0;color:var(--gold);text-wrap:balance}
+h1 small{display:block;font:500 12px/1.4 system-ui,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-top:6px}
+#status{font-size:13px;color:var(--muted);border:1px solid var(--line);border-radius:999px;padding:5px 12px;background:var(--surface)}
+.grid{display:grid;grid-template-columns:minmax(0,400px) minmax(0,1fr);gap:20px;align-items:start}
 @media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
-.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
-.step{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;gap:8px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.025),transparent 120px),var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:14px;min-width:0;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.step{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--gold);font-weight:700;display:flex;justify-content:space-between;gap:8px;padding-top:4px}
+.step + .step,.card > .step:not(:first-child){border-top:1px solid var(--line);padding-top:16px;margin-top:4px}
+.step span + span{color:var(--muted);letter-spacing:.04em;text-transform:none;font-weight:500}
 label{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:13px}
-textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;font-weight:400}
+textarea,input:not([type=checkbox]){font:inherit;color:var(--fg);background:var(--sunk);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%;font-weight:400}
 textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
-#cola{min-height:120px;resize:vertical;font-size:13px}
+input[type=checkbox]{accent-color:var(--accent);width:18px;height:18px}
+#cola{min-height:110px;resize:vertical;font-size:13px}
 #nomes{min-height:150px;resize:vertical}
+#obs{min-height:64px;resize:vertical}
 .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
-button{font:600 13px/1 system-ui,sans-serif;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:10px 14px;cursor:pointer}
-button:hover{border-color:var(--accent)}
+button{font:600 13px/1 system-ui,sans-serif;border-radius:10px;border:1px solid var(--line);background:var(--sunk);color:var(--fg);padding:11px 15px;cursor:pointer;transition:border-color .15s,background .15s}
+button:hover:not(:disabled){border-color:var(--accent)}
 button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
-button:disabled{opacity:.5;cursor:default}
-.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{border:0;border-radius:0;padding:9px 14px;background:transparent}
+button.primary:hover:not(:disabled){background:var(--gold)}
+button:disabled{opacity:.45;cursor:default}
+button.wide{width:100%;padding:15px;text-align:left;line-height:1.35}
+button.wide small{display:block;font-weight:400;opacity:.8;margin-top:3px;word-break:break-all}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:10px 16px;background:transparent}
 .seg button+button{border-left:1px solid var(--line)}
 .seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
 .tabs{display:flex;gap:6px}
 .tabs button{flex:1}
-.tabs button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.tabs button[aria-pressed=true]{background:var(--green);color:#fff;border-color:var(--green)}
 .sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
-.sw button{padding:0;height:54px;border-radius:8px;background-size:cover;background-position:center;position:relative;border:2px solid transparent;overflow:hidden}
+.sw button{padding:0;height:58px;border-radius:10px;background-size:cover;background-position:center;position:relative;border:2px solid transparent;overflow:hidden}
 .sw button span{position:absolute;inset:auto 0 0 0;font-size:11px;padding:3px 0;background:rgba(0,0,0,.55);color:#fff}
 .sw button[aria-pressed=true]{border-color:var(--gold);box-shadow:0 0 0 2px var(--surface) inset}
 .hint{font-size:12px;color:var(--muted);font-weight:400}
 .count{font-variant-numeric:tabular-nums;font-weight:600}
 .chk{flex-direction:row;align-items:center;gap:8px;font-weight:500}
 .msgs{display:flex;flex-direction:column;gap:6px}
-.msg{font-size:13px;border-radius:8px;padding:8px 10px}
+.msg{font-size:13px;border-radius:10px;padding:8px 12px}
 .msg.err{background:var(--err-bg);color:var(--err)}
 .msg.warn{background:var(--warn-bg);color:var(--warn)}
-.prev{position:relative;background:var(--sunk);border-radius:8px;border:1px solid var(--line);overflow:hidden;aspect-ratio:3/2;max-width:100%}
+.prev{position:relative;background:var(--sunk);border-radius:12px;border:1px solid var(--line-gold);overflow:hidden;aspect-ratio:3/2;max-width:100%;box-shadow:0 14px 34px rgba(0,0,0,.35)}
 .prev canvas{display:block;width:100%;height:100%;object-fit:contain}
 .prev .ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13px;text-align:center;padding:16px}
 .spec{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
 .spec b{color:var(--fg);font-weight:600}
 .dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
-@media (max-width:480px){.dl{grid-template-columns:minmax(0,1fr)}}
 .dl button{padding:14px;text-align:left;line-height:1.35}
 .dl button small{display:block;font-weight:400;opacity:.8;margin-top:3px;word-break:break-all}
+.extra{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,2fr);gap:10px}
 #dlmsg{font-size:13px;color:var(--muted);min-height:1.5em}
 #dlmsg.ok{color:var(--ok)} #dlmsg.err{color:var(--err)}
-.bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar{height:5px;background:var(--line);border-radius:5px;overflow:hidden}
 .bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+.sync{display:flex;flex-direction:column;gap:10px;background:var(--sunk);border:1px solid var(--line);border-radius:12px;padding:12px}
+.sync > .row{justify-content:space-between}
+.lista{display:flex;flex-direction:column;gap:6px;max-height:232px;overflow:auto}
+.lista button{display:flex;justify-content:space-between;gap:10px;text-align:left;background:var(--surface);line-height:1.3}
+.lista button span{color:var(--muted);font-weight:400;font-size:12px}
+.lista button[aria-pressed=true]{border-color:var(--accent)}
+details summary{cursor:pointer;font-size:12px;color:var(--muted)}
+details[open]{display:flex;flex-direction:column;gap:10px}
+@media (max-width:600px){
+  body{padding-block:16px 40px}
+  h1{font-size:20px}
+  .card{padding:14px;border-radius:14px}
+  textarea,input:not([type=checkbox]){font-size:16px}
+  button{min-height:44px}
+  .dl,.extra{grid-template-columns:minmax(0,1fr)}
+}
 </style>
 </head>
 <body>
@@ -86,6 +106,15 @@ button:disabled{opacity:.5;cursor:default}
   <div class="grid">
     <div class="card">
       <div class="step"><span>1 · Pedido</span></div>
+      <div class="sync">
+        <div class="row"><b>Pedidos da loja</b><button type="button" id="sync">Sincronizar</button></div>
+        <div class="lista" id="lista"></div>
+        <div class="hint" id="syncmsg">Busque os pedidos da Shopify ou cole os dados abaixo.</div>
+        <details id="cfg"><summary>Configurar conexão</summary>
+          <label>Endereço do Worker<input type="url" id="wurl" placeholder="https://pedidos-doce-morada.SEU-USUARIO.workers.dev" autocomplete="off"></label>
+          <label>Chave de acesso<input type="password" id="wkey" autocomplete="off"></label>
+        </details>
+      </div>
       <label>Cole os dados do pedido
         <textarea id="cola" placeholder="Copie da página do pedido na Shopify, por exemplo:&#10;Pedido #1000 · 60x40cm&#10;Tapete 1 - Fundo: Verde&#10;Tapete 1 - Título: Casa dos Vovós&#10;Tapete 1 - Nome 1: Ana&#10;Tapete 2: Igual ao Tapete 1"></textarea>
       </label>
@@ -122,6 +151,11 @@ button:disabled{opacity:.5;cursor:default}
         <button class="primary" id="dl1" disabled>Baixar Tapete 1<small id="fn1">—</small></button>
         <button class="primary" id="dl2" disabled>Baixar Tapete 2<small id="fn2">—</small></button>
       </div>
+      <div class="extra">
+        <label><span>Entrega (cidade/UF) <span class="hint">· opcional</span></span><input type="text" id="entrega" placeholder="Joinville/SC"></label>
+        <label><span>Observações para a fábrica <span class="hint">· opcional</span></span><textarea id="obs" rows="2"></textarea></label>
+      </div>
+      <button class="primary wide" id="pdf" disabled>Baixar PDF do pedido<small id="fnpdf">—</small></button>
       <div class="bar" id="bar" hidden><i></i></div>
       <div id="dlmsg"></div>
       <p class="hint" style="margin:0">Gere os arquivos pelo computador: o arquivo em tamanho real tem 33 a 50 megapixels e o celular não aguenta. O boneco rosa fica de fora até ser refeito no Flow.</p>
@@ -129,6 +163,7 @@ button:disabled{opacity:.5;cursor:default}
   </div>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 (() => {
 const DPI = 300;
@@ -404,7 +439,8 @@ function previa() {
   const temArte = a.nomes.length || a.titulo;
   $("ph").hidden = !!temArte;
   const erros = k => checar(k).some(m => m[0] === "err");
-  $("dl1").disabled = erros(1); $("dl2").disabled = erros(2);
+  $("dl1").disabled = erros(1); $("dl2").disabled = erros(2); $("pdf").disabled = erros(1) || erros(2);
+  $("fnpdf").textContent = nomePdf() + (st.igual ? " · 2 páginas" : " · 3 páginas");
   $("fn1").textContent = nomeArq(1); $("fn2").textContent = nomeArq(2) + (st.igual ? " · igual ao 1" : "");
   if (!temArte || !FUNDOS.includes(a.fundo)) { const c = $("cv"); c.width = 1; c.height = 1; return; }
   const box = $("prevBox").clientWidth || 900, s = Math.min(1, (box * Math.min(2, devicePixelRatio || 1)) / W);
@@ -416,7 +452,7 @@ let ocupado = false;
 async function baixar(k) {
   if (ocupado) return;
   const msg = $("dlmsg"); msg.className = "";
-  ocupado = true; $("dl1").disabled = $("dl2").disabled = true;
+  ocupado = true; $("dl1").disabled = $("dl2").disabled = $("pdf").disabled = true;
   const bar = $("bar"), fill = bar.firstElementChild; bar.hidden = false; fill.style.width = "3%";
   try {
     msg.textContent = `Montando o Tapete ${k} em tamanho real…`;
@@ -431,15 +467,134 @@ async function baixar(k) {
     a.href = url; a.download = nomeArq(k); document.body.appendChild(a); a.click(); a.remove();
     setTimeout(() => URL.revokeObjectURL(url), 60000);
     msg.className = "ok"; msg.textContent = `${nomeArq(k)} salvo.`;
+  } catch (e) { msg.className = "err"; msg.textContent = msgErro(e); }
+  finally { ocupado = false; bar.hidden = true; previa(); }
+}
+function msgErro(e) {
+  const code = e && e.code;
+  return code === "declined" ? "Download cancelado." :
+    code === "rate_limited" ? "Já tem uma janela de download aberta — confirme ou feche ela e tente de novo." :
+    code === "too_large" ? "Arquivo grande demais para este aparelho. Use o computador." :
+    (e && e.message === "toBlob") ? "O navegador não conseguiu gerar uma imagem desse tamanho. Use o Chrome no computador." :
+    "Não deu para baixar: " + ((e && (e.message || e.code)) || e);
+}
+
+/* ---------- PDF do pedido para a fábrica ---------- */
+const nomePdf = () => `Pedido_${st.pedido || "pedido"}_DoceMorada.pdf`;
+const rug = k => st.igual ? "Rug 1 & 2" : "Rug " + k;
+const pausa = () => new Promise(r => setTimeout(r, 30));
+
+function ficha(doc, ks) {
+  const cfg = TAM[st.tam], M = 15, PW = 210, PH = 297, CW = PW - 2 * M, LW = 52;
+  let y = M + 6;
+  doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.text(`ORDER #${st.pedido || "-"} - Doce Morada`, M, y);
+  y += 7; doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(90);
+  doc.text("Customized Christmas doormat / Tapete de Natal personalizado", M, y);
+  doc.setTextColor(0); y += 7;
+  const linhas = [
+    ["Size / Tamanho", `${cfg.w} x ${cfg.h} cm`],
+    ["Quantity / Quantidade", st.igual ? "2 pcs (same design / mesma arte)" : "2 pcs (2 different designs / 2 artes diferentes)"],
+    ["Material", "Crystal Velvet + TPR anti-slip sole"],
+    ["Print / Impressão", "Full-color sublimation, full bleed"],
+    ["Edge / Borda", "Sewn edge (overlock)"],
+    ["Art file / Arquivo", `Final art on the next page(s), ${cm(cfg.w)} x ${cm(cfg.h)} px, 300 dpi`],
+    ["Text / Texto", "ALREADY IN THE IMAGE. Print exactly as is. Do NOT add, retype or change any text.", true],
+    ["Names in the art / Nomes na arte", ks.map(k => { const a = arteDe(k); return `${rug(k)} - Title: ${a.titulo.trim()} | Names: ${a.nomes.join(", ")}`; }).join("\n")],
+  ];
+  const ent = $("entrega").value.trim(), obs = $("obs").value.trim();
+  if (ent) linhas.push(["Ship to / Entrega", ent]);
+  if (obs) linhas.push(["Notes / Observações", obs]);
+  doc.setFontSize(10); doc.setDrawColor(190); doc.setLineWidth(0.2);
+  const lh = doc.getFontSize() * doc.getLineHeightFactor() / doc.internal.scaleFactor;
+  for (const [lab, val, forte] of linhas) {
+    doc.setFont("helvetica", "bold"); const ll = doc.splitTextToSize(lab, LW - 4);
+    doc.setFont("helvetica", forte ? "bold" : "normal"); const vl = doc.splitTextToSize(val, CW - LW);
+    doc.line(M, y, M + CW, y);
+    doc.text(vl, M + LW, y + 5);
+    doc.setFont("helvetica", "bold"); doc.text(ll, M, y + 5);
+    y += Math.max(ll.length, vl.length) * lh + 3.5;
+  }
+  doc.line(M, y, M + CW, y);
+
+  // prévias: lado a lado no 60x40, uma embaixo da outra no 90x40
+  const rodape = PH - M - 9, cols = ks.length === 2 && st.tam === "60x40" ? 2 : 1, rows = ks.length / cols, gap = 6, lab = 6, r = cfg.w / cfg.h;
+  y += 7;
+  const cellW = (CW - gap * (cols - 1)) / cols, cellH = (rodape - 4 - y - gap * (rows - 1)) / rows - lab;
+  const bw = Math.min(cellW, cellH * r), bh = bw / r, x0 = M + (CW - (bw * cols + gap * (cols - 1))) / 2;
+  ks.forEach((k, i) => {
+    const px = x0 + (i % cols) * (bw + gap), py = y + Math.floor(i / cols) * (bh + lab + gap);
+    const c = desenhar(arteDe(k), st.tam, 0.25);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text(rug(k), px, py + 4);
+    doc.addImage(c.toDataURL("image/jpeg", 0.9), "JPEG", px, py + lab, bw, bh);
+    c.width = c.height = 1;
+  });
+  doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(90);
+  doc.text(doc.splitTextToSize("Preview only. Use the full-resolution art on the next page(s) for printing. Please send a photo before shipping.", CW), PW / 2, rodape, { align: "center" });
+  doc.setTextColor(0);
+}
+
+async function baixarPdf() {
+  if (ocupado) return;
+  const msg = $("dlmsg"); msg.className = "";
+  ocupado = true; $("dl1").disabled = $("dl2").disabled = $("pdf").disabled = true;
+  const bar = $("bar"), fill = bar.firstElementChild; bar.hidden = false; fill.style.width = "3%";
+  try {
+    if (!window.jspdf) throw new Error("o gerador de PDF não carregou. Confira a internet e recarregue a página.");
+    const cfg = TAM[st.tam], ks = st.igual ? [1] : [1, 2], pw = cfg.w * 10, ph = cfg.h * 10;
+    msg.textContent = "Montando a ficha do pedido…"; await pausa();
+    const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+    ficha(doc, ks); fill.style.width = "8%";
+    for (const [i, k] of ks.entries()) {
+      const parte = p => fill.style.width = (8 + (i + p) / ks.length * 88) + "%";
+      msg.textContent = `Montando o Tapete ${k} em tamanho real…`; await pausa();
+      const c = desenhar(arteDe(k), st.tam, 1);
+      msg.textContent = `Ajustando a nitidez do Tapete ${k}…`;
+      await nitidez(c, 2, 0.6, 2, p => parte(p * 0.8));
+      msg.textContent = `Colocando o Tapete ${k} no PDF…`; parte(0.85); await pausa();
+      const jpg = c.toDataURL("image/jpeg", 0.95); c.width = c.height = 1;
+      if (jpg.length < 100) throw new Error("toBlob");
+      doc.addPage([pw, ph], "landscape");
+      doc.addImage(jpg, "JPEG", 0, 0, pw, ph, undefined, "NONE");
+      parte(1);
+    }
+    msg.textContent = "Salvando o PDF…"; await pausa();
+    doc.save(nomePdf());
+    msg.className = "ok"; msg.textContent = `${nomePdf()} salvo.`;
+  } catch (e) { msg.className = "err"; msg.textContent = msgErro(e); }
+  finally { ocupado = false; bar.hidden = true; previa(); }
+}
+
+/* ---------- pedidos da loja (via Cloudflare Worker, ver worker/) ---------- */
+const guardado = k => { try { return localStorage.getItem(k) || ""; } catch { return ""; } };
+const guardar = (k, v) => { try { localStorage.setItem(k, v); } catch {} };
+let pedidos = [];
+async function sincronizar() {
+  const url = $("wurl").value.trim().replace(/\/+$/, ""), chave = $("wkey").value.trim(), m = $("syncmsg");
+  if (!url || !chave) { $("cfg").open = true; m.textContent = "Preencha o endereço do Worker e a chave de acesso."; return; }
+  $("sync").disabled = true; m.textContent = "Buscando pedidos…";
+  try {
+    const r = await fetch(url + "/pedidos", { headers: { "X-Chave": chave } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.erro || "erro " + r.status);
+    pedidos = j.pedidos || []; listar();
+    m.textContent = `${pedidos.length} ${pedidos.length === 1 ? "pedido" : "pedidos"} com tapete nos últimos 60 dias · atualizado às ` +
+      new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    $("cfg").open = false;
   } catch (e) {
-    msg.className = "err";
-    const code = e && e.code;
-    msg.textContent = code === "declined" ? "Download cancelado." :
-      code === "rate_limited" ? "Já tem uma janela de download aberta — confirme ou feche ela e tente de novo." :
-      code === "too_large" ? "Arquivo grande demais para este aparelho. Use o computador." :
-      (e && e.message === "toBlob") ? "O navegador não conseguiu gerar uma imagem desse tamanho. Use o Chrome no computador." :
-      "Não deu para baixar: " + ((e && (e.message || e.code)) || e);
-  } finally { ocupado = false; bar.hidden = true; previa(); }
+    m.textContent = "Não deu para sincronizar: " + (e instanceof TypeError ? "sem resposta do Worker (confira o endereço)." : e.message);
+  } finally { $("sync").disabled = false; }
+}
+function listar() {
+  const l = $("lista"); l.innerHTML = "";
+  pedidos.forEach(p => {
+    const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", p.numero === st.pedido);
+    const n = document.createElement("b"), s = document.createElement("span");
+    n.textContent = "#" + p.numero;
+    s.textContent = [p.tamanho, new Date(p.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }), p.status].filter(Boolean).join(" · ");
+    b.append(n, s);
+    b.onclick = () => { $("cola").value = p.texto; aplicarLeitura(ler(p.texto)); listar(); };
+    l.appendChild(b);
+  });
 }
 
 /* ---------- eventos ---------- */
@@ -459,7 +614,12 @@ $("exemplo").onclick = () => {
   $("cola").value = "Pedido #1000 · 60x40cm\nTapete 1 - Fundo: Verde\nTapete 1 - Título: Casa dos Vovós\nTapete 1 - Pessoas: 3\nTapete 1 - Nome 1: Ana\nTapete 1 - Nome 2: Pedro\nTapete 1 - Nome 3: Clara\nTapete 2: Igual ao Tapete 1";
   aplicarLeitura(ler($("cola").value));
 };
-$("dl1").onclick = () => baixar(1); $("dl2").onclick = () => baixar(2);
+$("dl1").onclick = () => baixar(1); $("dl2").onclick = () => baixar(2); $("pdf").onclick = baixarPdf;
+$("wurl").value = guardado("dm_wurl"); $("wkey").value = guardado("dm_wkey");
+$("wurl").onchange = e => guardar("dm_wurl", e.target.value.trim());
+$("wkey").onchange = e => guardar("dm_wkey", e.target.value.trim());
+$("sync").onclick = sincronizar;
+if ($("wurl").value && $("wkey").value) sincronizar();
 addEventListener("resize", agendar);
 window.__dm = { desenhar, nitidez, pngComDpi, st, ler, aplicarLeitura, arteDe };
 
