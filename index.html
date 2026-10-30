@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Gerador Doce Morada</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=Pacifico&display=swap">
+<style>
+:root{
+  --bg:#f5f0e6; --surface:#fffdf8; --sunk:#efe8da; --fg:#1d2721; --muted:#686d61; --line:#e0d8c7;
+  --accent:#1f4d36; --accent-fg:#fbf7ee; --gold:#a8822f; --warn:#8a5a00; --warn-bg:#fbefd2; --err:#9b2c2c; --err-bg:#f8e1df; --ok:#2f6b47;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121814; --surface:#1a221d; --sunk:#151c18; --fg:#ebe5d7; --muted:#a39f91; --line:#2c3831;
+  --accent:#8cc7a3; --accent-fg:#0f1a14; --gold:#d8b46a; --warn:#e8c06a; --warn-bg:#2e2715; --err:#f0a39b; --err-bg:#331c1a; --ok:#8cc7a3; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#121814; --surface:#1a221d; --sunk:#151c18; --fg:#ebe5d7; --muted:#a39f91; --line:#2c3831;
+  --accent:#8cc7a3; --accent-fg:#0f1a14; --gold:#d8b46a; --warn:#e8c06a; --warn-bg:#2e2715; --err:#f0a39b; --err-bg:#331c1a; --ok:#8cc7a3; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--fg);font:14px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 48px}
+.wrap{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+header{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 16px;border-bottom:1px solid var(--line);padding-bottom:14px}
+h1{font:700 22px/1.2 Cinzel,Georgia,serif;letter-spacing:.04em;margin:0;text-wrap:balance}
+h1 small{display:block;font:500 12px/1.4 system-ui,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:4px}
+#status{font-size:13px;color:var(--muted)}
+.grid{display:grid;grid-template-columns:minmax(0,380px) minmax(0,1fr);gap:20px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.step{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);font-weight:600;display:flex;justify-content:space-between;gap:8px}
+label{display:flex;flex-direction:column;gap:6px;font-weight:600;font-size:13px}
+textarea,input[type=text]{font:inherit;color:var(--fg);background:var(--sunk);border:1px solid var(--line);border-radius:8px;padding:9px 10px;width:100%;font-weight:400}
+textarea:focus,input:focus{outline:2px solid var(--accent);outline-offset:0;border-color:transparent}
+#cola{min-height:120px;resize:vertical;font-size:13px}
+#nomes{min-height:150px;resize:vertical}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+button{font:600 13px/1 system-ui,sans-serif;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--fg);padding:10px 14px;cursor:pointer}
+button:hover{border-color:var(--accent)}
+button.primary{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+button:disabled{opacity:.5;cursor:default}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:9px 14px;background:transparent}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg)}
+.tabs{display:flex;gap:6px}
+.tabs button{flex:1}
+.tabs button[aria-pressed=true]{background:var(--accent);color:var(--accent-fg);border-color:var(--accent)}
+.sw{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.sw button{padding:0;height:54px;border-radius:8px;background-size:cover;background-position:center;position:relative;border:2px solid transparent;overflow:hidden}
+.sw button span{position:absolute;inset:auto 0 0 0;font-size:11px;padding:3px 0;background:rgba(0,0,0,.55);color:#fff}
+.sw button[aria-pressed=true]{border-color:var(--gold);box-shadow:0 0 0 2px var(--surface) inset}
+.hint{font-size:12px;color:var(--muted);font-weight:400}
+.count{font-variant-numeric:tabular-nums;font-weight:600}
+.chk{flex-direction:row;align-items:center;gap:8px;font-weight:500}
+.msgs{display:flex;flex-direction:column;gap:6px}
+.msg{font-size:13px;border-radius:8px;padding:8px 10px}
+.msg.err{background:var(--err-bg);color:var(--err)}
+.msg.warn{background:var(--warn-bg);color:var(--warn)}
+.prev{position:relative;background:var(--sunk);border-radius:8px;border:1px solid var(--line);overflow:hidden;aspect-ratio:3/2;max-width:100%}
+.prev canvas{display:block;width:100%;height:100%;object-fit:contain}
+.prev .ph{position:absolute;inset:0;display:grid;place-items:center;color:var(--muted);font-size:13px;text-align:center;padding:16px}
+.spec{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.spec b{color:var(--fg);font-weight:600}
+.dl{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (max-width:480px){.dl{grid-template-columns:minmax(0,1fr)}}
+.dl button{padding:14px;text-align:left;line-height:1.35}
+.dl button small{display:block;font-weight:400;opacity:.8;margin-top:3px;word-break:break-all}
+#dlmsg{font-size:13px;color:var(--muted);min-height:1.5em}
+#dlmsg.ok{color:var(--ok)} #dlmsg.err{color:var(--err)}
+.bar{height:4px;background:var(--line);border-radius:4px;overflow:hidden}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .15s}
+</style>
+</head>
+<body>
+
+
+<div class="wrap">
+  <header>
+    <h1>Gerador de arte<small>Doce Morada · arquivo de impressão 300 dpi</small></h1>
+    <div id="status">Carregando peças…</div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <div class="step"><span>1 · Pedido</span></div>
+      <label>Cole os dados do pedido
+        <textarea id="cola" placeholder="Copie da página do pedido na Shopify, por exemplo:&#10;Pedido #1000 · 60x40cm&#10;Tapete 1 - Fundo: Verde&#10;Tapete 1 - Título: Casa dos Vovós&#10;Tapete 1 - Nome 1: Ana&#10;Tapete 2: Igual ao Tapete 1"></textarea>
+      </label>
+      <div class="row">
+        <button class="primary" id="ler">Ler pedido</button>
+        <button id="exemplo">Usar exemplo</button>
+      </div>
+
+      <div class="step"><span>2 · Conferir</span></div>
+      <div class="row">
+        <label style="flex:1;min-width:110px">Nº do pedido<input type="text" id="pedido" inputmode="numeric" placeholder="1000"></label>
+        <label>Tamanho
+          <div class="seg" id="tam"><button data-v="60x40">60x40</button><button data-v="90x40">90x40</button></div>
+        </label>
+      </div>
+      <div class="tabs" id="tabs"><button data-t="1">Tapete 1</button><button data-t="2">Tapete 2</button></div>
+      <label class="chk" id="igualBox"><input type="checkbox" id="igual"> Igual ao Tapete 1</label>
+      <div id="campos" style="display:flex;flex-direction:column;gap:14px">
+        <label>Fundo<div class="sw" id="fundos"></div></label>
+        <label>Título<input type="text" id="titulo" maxlength="40"></label>
+        <label><span class="row" style="justify-content:space-between">Nomes <span class="hint"><span class="count" id="cnt">0</span> de <span id="max">8</span> · um por linha</span></span>
+          <textarea id="nomes"></textarea>
+        </label>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="step"><span id="prevLbl">3 · Prévia</span><span id="prevInfo"></span></div>
+      <div class="prev" id="prevBox"><canvas id="cv"></canvas><div class="ph" id="ph">Cole um pedido ou use o exemplo para ver a arte.</div></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="spec" id="spec"></div>
+      <div class="step"><span>4 · Arquivos para o fornecedor</span></div>
+      <div class="dl">
+        <button class="primary" id="dl1" disabled>Baixar Tapete 1<small id="fn1">—</small></button>
+        <button class="primary" id="dl2" disabled>Baixar Tapete 2<small id="fn2">—</small></button>
+      </div>
+      <div class="bar" id="bar" hidden><i></i></div>
+      <div id="dlmsg"></div>
+      <p class="hint" style="margin:0">Gere os arquivos pelo computador: o arquivo em tamanho real tem 33 a 50 megapixels e o celular não aguenta. O boneco rosa fica de fora até ser refeito no Flow.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+const DPI = 300;
+const TAM = { "60x40": { w: 60, h: 40, max: 8, fila: 5 }, "90x40": { w: 90, h: 40, max: 15, fila: 8 } };
+const ORDEM = ["vermelho", "verde", "azul", "amarelo", "rena", "cartola", "roxo"]; // rosa fora até ser refeito
+const FUNDOS = ["Verde", "Vermelho", "Azul", "Creme"];
+const COR_TIT = { Verde: "rgb(222,186,110)", Vermelho: "rgb(236,201,122)", Azul: "rgb(226,196,128)", Creme: "rgb(122,31,34)" };
+const cm = v => Math.round(v / 2.54 * DPI);
+const $ = id => document.getElementById(id);
+
+const A = {}; let META = null, pronto = false;
+const st = { pedido: "", tam: "60x40", ativo: 1, igual: true,
+  t: { 1: { fundo: "Verde", titulo: "", nomes: [] }, 2: { fundo: "Verde", titulo: "", nomes: [] } } };
+
+/* ---------- peças ---------- */
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(src); i.src = src; });
+async function carregar() {
+  META = await (await fetch("p/meta.json")).json();
+  const lista = [...FUNDOS.map(f => ["fundo_" + f, "p/fundo_" + f.toLowerCase() + ".jpg"]),
+    ["xadrez", "p/xadrez.jpg"], ["guirlanda", "p/guirlanda.png"], ["canto", "p/canto.png"],
+    ...ORDEM.map(n => ["boneco_" + n, "p/boneco_" + n + ".png"])];
+  let ok = 0;
+  await Promise.all(lista.map(async ([k, src]) => { A[k] = await loadImg(src); $("status").textContent = `Carregando peças… ${++ok}/${lista.length}`; }));
+  await Promise.all([document.fonts.load('700 100px Cinzel', "AÁÂÃÉÊÍÓÔÕÚÇ"), document.fonts.load('100px Pacifico', "aáãéíóõúç")]);
+  pronto = true; $("status").textContent = "Peças prontas";
+}
+
+/* ---------- desenho ---------- */
+function mk(w, h) { const c = document.createElement("canvas"); c.width = Math.max(1, Math.round(w)); c.height = Math.max(1, Math.round(h));
+  const x = c.getContext("2d"); x.imageSmoothingEnabled = true; x.imageSmoothingQuality = "high"; return [c, x]; }
+function sombra(x, a, blur, dx, dy) { x.shadowColor = `rgba(0,0,0,${a})`; x.shadowBlur = blur * 2; x.shadowOffsetX = dx; x.shadowOffsetY = dy; }
+function semSombra(x) { x.shadowColor = "transparent"; x.shadowBlur = 0; x.shadowOffsetX = 0; x.shadowOffsetY = 0; }
+
+function faixa(src, L, T) {
+  const sw = Math.round(src.width * T / src.height);
+  const [c, x] = mk(L, T);
+  let px = Math.floor(-sw / 6), flip = false; const passo = Math.max(1, Math.floor(sw * 0.82));
+  while (px < L) {
+    x.save();
+    if (flip) { x.translate(px + sw, 0); x.scale(-1, 1); x.drawImage(src, 0, 0, sw, T); }
+    else x.drawImage(src, px, 0, sw, T);
+    x.restore(); px += passo; flip = !flip;
+  }
+  return c;
+}
+function girar90(src) { const [c, x] = mk(src.height, src.width); x.translate(0, src.width); x.rotate(-Math.PI / 2); x.drawImage(src, 0, 0); return c; }
+function poe(x, src, px, py, modo) {
+  const w = src.width, h = src.height; x.save();
+  if (modo === "r180") { x.translate(px + w, py + h); x.rotate(Math.PI); }
+  else if (modo === "fx") { x.translate(px + w, py); x.scale(-1, 1); }
+  else if (modo === "fy") { x.translate(px, py + h); x.scale(1, -1); }
+  else x.translate(px, py);
+  x.drawImage(src, 0, 0); x.restore();
+}
+function cabe(x, fonte, txt, maxW, ini, s) {
+  let f = ini;
+  while (f > 12 * s) { x.font = fonte(f); if (x.measureText(txt).width <= maxW) return f; f = Math.floor(f * 0.95); }
+  return f;
+}
+
+function desenhar(arte, tam, s) {
+  const cfg = TAM[tam];
+  const W = Math.round(cm(cfg.w) * s), H = Math.round(cm(cfg.h) * s);
+  const nomes = arte.nomes;
+  const [c, x] = mk(W, H);
+
+  // 1. fundo
+  const bg = A["fundo_" + arte.fundo], r = W / H;
+  if (bg.width / bg.height > r) { const nw = Math.round(bg.height * r); x.drawImage(bg, Math.floor((bg.width - nw) / 2), 0, nw, bg.height, 0, 0, W, H); }
+  else { const nh = Math.round(bg.width / r); x.drawImage(bg, 0, Math.floor((bg.height - nh) / 2), bg.width, nh, 0, 0, W, H); }
+
+  // 2. vinheta
+  const vw = 320, vh = Math.round(320 * H / W), [vc, vx] = mk(vw, vh), im = vx.createImageData(vw, vh);
+  for (let j = 0; j < vh; j++) for (let i = 0; i < vw; i++) {
+    const d = Math.max(Math.abs((i + .5) / vw - .5) * 2, Math.abs((j + .5) / vh - .5) * 2);
+    im.data[(j * vw + i) * 4 + 3] = Math.pow(Math.min(1, Math.max(0, (d - .55) / .45)), 1.6) * 150;
+  }
+  vx.putImageData(im, 0, 0); x.drawImage(vc, 0, 0, W, H);
+
+  // 3. moldura
+  const T = Math.round(H * 0.13), xh = Math.round(H * 0.035), off = -Math.round(T * 0.18);
+  x.drawImage(faixa(A.xadrez, W, xh), 0, H - xh);
+  const topo = faixa(A.guirlanda, W, T), lado = girar90(faixa(A.guirlanda, H, T));
+  sombra(x, .45, 12 * s, 6 * s, 10 * s);
+  poe(x, topo, 0, off); poe(x, topo, 0, H - xh - T - off, "r180");
+  poe(x, lado, off, 0); poe(x, lado, W - T - off, 0, "r180");
+  semSombra(x);
+  const cs = Math.round(T * 2.4), chh = Math.round(A.canto.height * cs / A.canto.width);
+  const [cc, cx] = mk(cs, chh); cx.drawImage(A.canto, 0, 0, cs, chh);
+  poe(x, cc, W - cs + off, off); poe(x, cc, -off, off, "fx");
+  poe(x, cc, W - cs + off, H - xh - chh - off, "fy"); poe(x, cc, -off, H - xh - chh - off, "r180");
+
+  // 4. título
+  const seg = T * 1.05, tit = (arte.titulo || "").trim().toUpperCase();
+  let areaTop = seg + H * 0.06;
+  if (tit) {
+    const fCin = f => `700 ${f}px Cinzel, Georgia, serif`;
+    x.font = fCin(cabe(x, fCin, tit, W * 0.6, Math.round(H * 0.085), s));
+    x.textAlign = "left"; x.textBaseline = "alphabetic";
+    const m = x.measureText(tit), asc = m.fontBoundingBoxAscent || m.actualBoundingBoxAscent;
+    const base = seg + H * 0.06 + asc, tx = W / 2 - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2;
+    sombra(x, .67, 8 * s, 5 * s, 8 * s); x.fillStyle = COR_TIT[arte.fundo]; x.fillText(tit, tx, base); semSombra(x);
+    areaTop = base + m.actualBoundingBoxDescent + H * 0.03;
+  }
+  const areaBot = H - xh - T;
+
+  // 5. bonecos + nomes
+  const n = nomes.length;
+  if (n) {
+    const porFila = n <= cfg.fila ? n : Math.ceil(n / 2), filas = Math.ceil(n / porFila);
+    const areaW = W - 2 * seg - cm(1) * s, filaH = (areaBot - areaTop) / filas;
+    let i = 0;
+    for (let fl = 0; fl < filas; fl++) {
+      const q = Math.min(porFila, n - i), bs = [];
+      for (let k = 0; k < q; k++) bs.push(ORDEM[(i + k) % ORDEM.length]);
+      const lim = Math.min(filaH * 0.97, H * 0.5);
+      let ref = Math.min(...bs.map(b => lim * META[b].corpo / META[b].h));
+      ref = Math.min(ref, areaW / (q + 0.3 * (q - 1)));
+      const gap = ref * 0.3, fat = bs.map(b => ref / META[b].corpo);
+      const alts = bs.map((b, k) => META[b].h * fat[k]);
+      const cx0 = (W - (ref * q + gap * (q - 1))) / 2 + ref / 2;
+      const base = areaTop + filaH * (fl + 1) - (filaH - Math.max(...alts)) / 2;
+      for (let k = 0; k < q; k++) {
+        const b = bs[k], mt = META[b], f = fat[k], h = alts[k], w = mt.w * f;
+        const px = Math.round(cx0 + k * (ref + gap) - mt.centro * f), py = Math.round(base - h);
+        sombra(x, .5, 14 * s, 10 * s, 14 * s);
+        x.drawImage(A["boneco_" + b], px, py, Math.round(w), Math.round(h));
+        semSombra(x);
+        const nome = nomes[i];
+        const fPac = z => `${z}px Pacifico, cursive`;
+        const fz = cabe(x, fPac, nome, ref * 0.78, Math.round(h * 0.085), s);
+        x.font = fPac(fz);
+        const m = x.measureText(nome);
+        const ccx = px + mt.centro * f, ccy = py + h * 0.86;
+        const tx = ccx - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2;
+        const ty = ccy + (m.actualBoundingBoxAscent - m.actualBoundingBoxDescent) / 2;
+        x.lineJoin = "round"; x.lineWidth = 2 * Math.max(4 * s, Math.round(fz * 0.09));
+        x.strokeStyle = "rgb(35,25,25)"; x.strokeText(nome, tx, ty);
+        x.fillStyle = "#fff"; x.fillText(nome, tx, ty);
+        i++;
+      }
+    }
+  }
+  return c;
+}
+
+/* nitidez final (unsharp mask em faixas, para não travar a página) */
+async function nitidez(c, rad, amt, thr, prog) {
+  const x = c.getContext("2d"), W = c.width, H = c.height, B = 192;
+  for (let y0 = 0; y0 < H; y0 += B) {
+    const ya = Math.max(0, y0 - rad), yb = Math.min(H, y0 + B + rad), h = yb - ya, inner = Math.min(B, H - y0);
+    const id = x.getImageData(0, ya, W, h), d = id.data, tmp = new Float32Array(W * h * 3), bl = new Float32Array(W * h * 3), n = 2 * rad + 1;
+    for (let j = 0; j < h; j++) for (let ch = 0; ch < 3; ch++) {
+      let sum = 0; const row = j * W;
+      for (let k = -rad; k <= rad; k++) sum += d[(row + Math.min(W - 1, Math.max(0, k))) * 4 + ch];
+      for (let i = 0; i < W; i++) {
+        tmp[(row + i) * 3 + ch] = sum / n;
+        sum += d[(row + Math.min(W - 1, i + rad + 1)) * 4 + ch] - d[(row + Math.max(0, i - rad)) * 4 + ch];
+      }
+    }
+    for (let i = 0; i < W; i++) for (let ch = 0; ch < 3; ch++) {
+      let sum = 0;
+      for (let k = -rad; k <= rad; k++) sum += tmp[(Math.min(h - 1, Math.max(0, k)) * W + i) * 3 + ch];
+      for (let j = 0; j < h; j++) {
+        bl[(j * W + i) * 3 + ch] = sum / n;
+        sum += tmp[(Math.min(h - 1, j + rad + 1) * W + i) * 3 + ch] - tmp[(Math.max(0, j - rad) * W + i) * 3 + ch];
+      }
+    }
+    const j0 = y0 - ya;
+    for (let j = j0; j < j0 + inner; j++) for (let i = 0; i < W; i++) {
+      const p = j * W + i;
+      for (let ch = 0; ch < 3; ch++) { const o = d[p * 4 + ch], df = o - bl[p * 3 + ch]; if (Math.abs(df) >= thr) d[p * 4 + ch] = o + amt * df; }
+    }
+    x.putImageData(id, 0, ya, 0, j0, W, inner);
+    prog && prog((y0 + inner) / H);
+    await new Promise(r => setTimeout(r, 0));
+  }
+}
+
+/* PNG com 300 dpi gravado no arquivo */
+const CRC = (() => { const t = new Uint32Array(256); for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; } return t; })();
+function crc32(b) { let c = 0xffffffff; for (let i = 0; i < b.length; i++) c = CRC[(c ^ b[i]) & 255] ^ (c >>> 8); return (c ^ 0xffffffff) >>> 0; }
+async function pngComDpi(c) {
+  const blob = await new Promise((res, rej) => c.toBlob(b => b ? res(b) : rej(new Error("toBlob")), "image/png"));
+  const buf = new Uint8Array(await blob.arrayBuffer()), ppm = Math.round(DPI / 0.0254);
+  const ch = new Uint8Array(21), dv = new DataView(ch.buffer);
+  dv.setUint32(0, 9); ch.set([0x70, 0x48, 0x59, 0x73], 4); dv.setUint32(8, ppm); dv.setUint32(12, ppm); ch[16] = 1;
+  dv.setUint32(17, crc32(ch.subarray(4, 17)));
+  return new Blob([buf.subarray(0, 33), ch, buf.subarray(33)], { type: "image/png" });
+}
+
+/* ---------- leitura do pedido ---------- */
+function ler(txt) {
+  const out = { pedido: null, tam: null, igual: null, t: { 1: {}, 2: {} }, pessoas: {} };
+  const p = txt.match(/#\s?(\d{3,7})/); if (p) out.pedido = p[1];
+  const z = txt.match(/(60|90)\s*[x×]\s*40/i); if (z) out.tam = z[1] + "x40";
+  const L = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  for (let i = 0; i < L.length; i++) {
+    const m = L[i].match(/^Tapete\s*([12])\s*[-–—]\s*(Fundo|T[íi]tulo|Pessoas|Nome\s*(\d+))\s*:?\s*(.*)$/i);
+    if (m) {
+      let v = m[4].trim(); if (!v && i + 1 < L.length) v = L[++i];
+      const t = out.t[m[1]], campo = m[2].toLowerCase();
+      if (campo === "fundo") t.fundo = FUNDOS.find(f => f.toLowerCase() === v.toLowerCase()) || v;
+      else if (campo.startsWith("t")) t.titulo = v;
+      else if (campo === "pessoas") out.pessoas[m[1]] = parseInt(v, 10);
+      else (t.nomes = t.nomes || [])[parseInt(m[3], 10) - 1] = v;
+      continue;
+    }
+    const g = L[i].match(/^Tapete\s*2\s*:?\s*(.*)$/i);
+    if (g) { let v = g[1].trim(); if (!v && i + 1 < L.length) v = L[++i]; if (/igual/i.test(v)) out.igual = true; }
+  }
+  for (const k of [1, 2]) if (out.t[k].nomes) out.t[k].nomes = out.t[k].nomes.filter(v => v != null);
+  if (out.igual == null) out.igual = !(out.t[2].fundo || out.t[2].titulo || out.t[2].nomes);
+  return out;
+}
+function aplicarLeitura(r) {
+  if (r.pedido) st.pedido = r.pedido;
+  if (r.tam) st.tam = r.tam;
+  st.igual = r.igual; st.pessoas = r.pessoas;
+  for (const k of [1, 2]) { const t = r.t[k]; if (t.fundo || t.titulo || t.nomes) st.t[k] = { fundo: t.fundo || "Verde", titulo: t.titulo || "", nomes: t.nomes || [] }; }
+  if (st.igual) st.t[2] = JSON.parse(JSON.stringify(st.t[1]));
+  st.ativo = 1; pintarForm(); agendar();
+}
+
+/* ---------- interface ---------- */
+const arteDe = k => (k === 2 && st.igual) ? st.t[1] : st.t[k];
+function checar(k) {
+  const a = arteDe(k), cfg = TAM[st.tam], ms = [], rot = `Tapete ${k}: `;
+  if (!FUNDOS.includes(a.fundo)) ms.push(["err", rot + `fundo "${a.fundo}" não existe — escolha um dos 4.`]);
+  if (!a.titulo.trim()) ms.push(["err", rot + "falta o título."]);
+  if (!a.nomes.length) ms.push(["err", rot + "nenhum nome."]);
+  if (a.nomes.length > cfg.max) ms.push(["err", rot + `${a.nomes.length} nomes, mas o ${st.tam} aceita até ${cfg.max}.`]);
+  const p = st.pessoas && st.pessoas[k];
+  if (p && p !== a.nomes.length && !(k === 2 && st.igual)) ms.push(["warn", rot + `o pedido diz ${p} pessoas, mas há ${a.nomes.length} nomes.`]);
+  a.nomes.filter(n => n.length > 11).forEach(n => ms.push(["warn", rot + `"${n}" é longo, a letra fica menor nesse boneco.`]));
+  if (a.titulo.length > 22) ms.push(["warn", rot + "título longo, a letra fica menor."]);
+  return ms;
+}
+const nomeArq = k => `${st.pedido || "pedido"}_tapete${k}_${st.tam}.png`;
+
+function pintarForm() {
+  $("pedido").value = st.pedido;
+  [...$("tam").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === st.tam));
+  [...$("tabs").children].forEach(b => b.setAttribute("aria-pressed", +b.dataset.t === st.ativo));
+  $("igualBox").hidden = st.ativo !== 2; $("igual").checked = st.igual;
+  const bloqueado = st.ativo === 2 && st.igual;
+  $("campos").style.opacity = bloqueado ? .5 : 1;
+  [...$("campos").querySelectorAll("input,textarea,button")].forEach(e => e.disabled = bloqueado);
+  const a = arteDe(st.ativo);
+  [...$("fundos").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === a.fundo));
+  $("titulo").value = a.titulo;
+  if (document.activeElement !== $("nomes")) $("nomes").value = a.nomes.join("\n");
+  contar();
+}
+function contar() {
+  const a = arteDe(st.ativo), mx = TAM[st.tam].max;
+  $("cnt").textContent = a.nomes.length; $("max").textContent = mx;
+  $("cnt").style.color = a.nomes.length > mx ? "var(--err)" : "";
+}
+
+let tmr = null;
+function agendar() { clearTimeout(tmr); tmr = setTimeout(previa, 180); }
+function previa() {
+  if (!pronto) return;
+  const a = arteDe(st.ativo), cfg = TAM[st.tam];
+  const ms = [...checar(1), ...checar(2)];
+  $("msgs").innerHTML = ""; ms.forEach(([n, t]) => { const d = document.createElement("div"); d.className = "msg " + n; d.textContent = t; $("msgs").appendChild(d); });
+  const W = cm(cfg.w), H = cm(cfg.h);
+  $("prevBox").style.aspectRatio = `${cfg.w}/${cfg.h}`;
+  $("prevLbl").textContent = `3 · Prévia do Tapete ${st.ativo}`;
+  $("prevInfo").textContent = st.ativo === 2 && st.igual ? "igual ao Tapete 1" : "";
+  $("spec").innerHTML = `<span>Tamanho <b>${cfg.w} × ${cfg.h} cm</b></span><span>Arquivo <b>${W} × ${H} px</b></span><span><b>300 dpi</b> · PNG RGB</span>`;
+  const temArte = a.nomes.length || a.titulo;
+  $("ph").hidden = !!temArte;
+  const erros = k => checar(k).some(m => m[0] === "err");
+  $("dl1").disabled = erros(1); $("dl2").disabled = erros(2);
+  $("fn1").textContent = nomeArq(1); $("fn2").textContent = nomeArq(2) + (st.igual ? " · igual ao 1" : "");
+  if (!temArte || !FUNDOS.includes(a.fundo)) { const c = $("cv"); c.width = 1; c.height = 1; return; }
+  const box = $("prevBox").clientWidth || 900, s = Math.min(1, (box * Math.min(2, devicePixelRatio || 1)) / W);
+  const art = desenhar({ ...a, nomes: a.nomes.slice(0, cfg.max) }, st.tam, s);
+  const cv = $("cv"); cv.width = art.width; cv.height = art.height; cv.getContext("2d").drawImage(art, 0, 0);
+}
+
+let ocupado = false;
+async function baixar(k) {
+  if (ocupado) return;
+  const msg = $("dlmsg"); msg.className = "";
+  ocupado = true; $("dl1").disabled = $("dl2").disabled = true;
+  const bar = $("bar"), fill = bar.firstElementChild; bar.hidden = false; fill.style.width = "3%";
+  try {
+    msg.textContent = `Montando o Tapete ${k} em tamanho real…`;
+    await new Promise(r => setTimeout(r, 30));
+    const c = desenhar(arteDe(k), st.tam, 1);
+    msg.textContent = "Ajustando a nitidez…";
+    await nitidez(c, 2, 0.6, 2, p => fill.style.width = (5 + p * 80) + "%");
+    msg.textContent = "Gerando o PNG…";
+    const blob = await pngComDpi(c); c.width = c.height = 1; fill.style.width = "100%";
+    
+    const url = URL.createObjectURL(blob), a = document.createElement("a");
+    a.href = url; a.download = nomeArq(k); document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    msg.className = "ok"; msg.textContent = `${nomeArq(k)} salvo.`;
+  } catch (e) {
+    msg.className = "err";
+    const code = e && e.code;
+    msg.textContent = code === "declined" ? "Download cancelado." :
+      code === "rate_limited" ? "Já tem uma janela de download aberta — confirme ou feche ela e tente de novo." :
+      code === "too_large" ? "Arquivo grande demais para este aparelho. Use o computador." :
+      (e && e.message === "toBlob") ? "O navegador não conseguiu gerar uma imagem desse tamanho. Use o Chrome no computador." :
+      "Não deu para baixar: " + ((e && (e.message || e.code)) || e);
+  } finally { ocupado = false; bar.hidden = true; previa(); }
+}
+
+/* ---------- eventos ---------- */
+FUNDOS.forEach(f => { const b = document.createElement("button"); b.type = "button"; b.dataset.v = f;
+  b.style.backgroundImage = `url(p/fundo_${f.toLowerCase()}.jpg)`; b.innerHTML = `<span>${f}</span>`;
+  b.onclick = () => { st.t[st.ativo].fundo = f; if (st.ativo === 1 && st.igual) st.t[2].fundo = f; pintarForm(); agendar(); };
+  $("fundos").appendChild(b); });
+$("tam").onclick = e => { const b = e.target.closest("button"); if (b) { st.tam = b.dataset.v; pintarForm(); agendar(); } };
+$("tabs").onclick = e => { const b = e.target.closest("button"); if (b) { st.ativo = +b.dataset.t; pintarForm(); agendar(); } };
+$("igual").onchange = e => { st.igual = e.target.checked; if (!st.igual) st.t[2] = JSON.parse(JSON.stringify(st.t[1])); pintarForm(); agendar(); };
+$("pedido").oninput = e => { st.pedido = e.target.value.replace(/\D/g, ""); agendar(); };
+$("titulo").oninput = e => { st.t[st.ativo].titulo = e.target.value; agendar(); };
+$("nomes").oninput = e => { st.t[st.ativo].nomes = e.target.value.split(/\r?\n/).map(v => v.trim()).filter(Boolean); contar(); agendar(); };
+$("nomes").onblur = () => pintarForm();
+$("ler").onclick = () => aplicarLeitura(ler($("cola").value));
+$("exemplo").onclick = () => {
+  $("cola").value = "Pedido #1000 · 60x40cm\nTapete 1 - Fundo: Verde\nTapete 1 - Título: Casa dos Vovós\nTapete 1 - Pessoas: 3\nTapete 1 - Nome 1: Ana\nTapete 1 - Nome 2: Pedro\nTapete 1 - Nome 3: Clara\nTapete 2: Igual ao Tapete 1";
+  aplicarLeitura(ler($("cola").value));
+};
+$("dl1").onclick = () => baixar(1); $("dl2").onclick = () => baixar(2);
+addEventListener("resize", agendar);
+window.__dm = { desenhar, nitidez, pngComDpi, st, ler, aplicarLeitura, arteDe };
+
+pintarForm();
+carregar().then(previa).catch(e => { $("status").textContent = "Erro ao carregar peças: " + e; });
+})();
+</script>
+
+</body>
+</html>
