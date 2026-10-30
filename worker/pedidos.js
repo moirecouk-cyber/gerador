@@ -19,7 +19,7 @@ async function token(env) {
     method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: new URLSearchParams({ grant_type: "client_credentials", client_id: env.SHOPIFY_CLIENT_ID, client_secret: env.SHOPIFY_CLIENT_SECRET }),
   });
-  if (!r.ok) throw new Error(`a Shopify recusou o login do app (${r.status})`);
+  if (!r.ok) throw new Error(`a Shopify recusou o login do app (${r.status}): ${(await r.text()).slice(0, 200)}`);
   const j = await r.json();
   cache = { t: j.access_token, ate: Date.now() + ((j.expires_in || 3600) - 300) * 1000 };
   return cache.t;
