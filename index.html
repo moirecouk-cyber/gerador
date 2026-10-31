@@ -113,7 +113,7 @@ details[open]{display:flex;flex-direction:column;gap:10px}
         </details>
       </div>
       <label>Cole os dados do pedido
-        <textarea id="cola" placeholder="Copie da página do pedido na Shopify, por exemplo:&#10;Pedido #1000 · 60x40cm&#10;Tapete 1 - Fundo: Verde&#10;Tapete 1 - Título: Casa dos Vovós&#10;Tapete 1 - Nome 1: Ana&#10;Tapete 2: Igual ao Tapete 1"></textarea>
+        <textarea id="cola" placeholder="Copie da página do pedido na Shopify, por exemplo:&#10;Pedido #1004&#10;Tapete 1 (Grande 90x40) - Fundo: Verde&#10;Tapete 1 (Grande 90x40) - Título: Casa dos Vovós&#10;Tapete 1 (Grande 90x40) - Nome 1: Ana&#10;Tapete 2 (Pequeno 60x40): Igual ao Tapete 1"></textarea>
       </label>
       <div class="row">
         <button class="primary" id="ler">Ler pedido</button>
@@ -123,7 +123,7 @@ details[open]{display:flex;flex-direction:column;gap:10px}
       <div class="step"><span>2 · Conferir</span></div>
       <div class="row">
         <label style="flex:1;min-width:110px">Nº do pedido<input type="text" id="pedido" inputmode="numeric" placeholder="1000"></label>
-        <label>Tamanho
+        <label><span id="tamLbl">Tamanho</span>
           <div class="seg" id="tam"><button data-v="60x40">60x40</button><button data-v="90x40">90x40</button></div>
         </label>
       </div>
@@ -168,7 +168,7 @@ const cm = v => Math.round(v / 2.54 * DPI);
 const $ = id => document.getElementById(id);
 
 const A = {}; let META = null, pronto = false;
-const st = { pedido: "", tam: "60x40", ativo: 1, igual: true,
+const st = { pedido: "", tam: { 1: "60x40", 2: "60x40" }, ativo: 1, igual: true,
   t: { 1: { fundo: "Verde", titulo: "", nomes: [] }, 2: { fundo: "Verde", titulo: "", nomes: [] } } };
 
 /* ---------- peças ---------- */
@@ -337,32 +337,47 @@ async function nitidez(c, rad, amt, thr, prog) {
 }
 
 /* ---------- leitura do pedido ---------- */
+// formato novo: "Tapete 1 (Grande 90x40) - Fundo: Verde", "Tapete 2 (Pequeno 60x40): Igual ao Tapete 1", "Kit: ..."
+// formato antigo: "Tapete 1 - Fundo: Verde" e um tamanho só no pedido
+const tamEm = s => { const z = (s || "").match(/(60|90)\s*[x×]\s*40/i); return z ? z[1] + "x40" : null; };
 function ler(txt) {
-  const out = { pedido: null, tam: null, igual: null, t: { 1: {}, 2: {} }, pessoas: {} };
+  const out = { pedido: null, tams: { 1: null, 2: null }, igual: null, t: { 1: {}, 2: {} }, pessoas: {} };
   const p = txt.match(/#\s?(\d{3,7})/); if (p) out.pedido = p[1];
-  const z = txt.match(/(60|90)\s*[x×]\s*40/i); if (z) out.tam = z[1] + "x40";
   const L = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+  let kit = null;
   for (let i = 0; i < L.length; i++) {
-    const m = L[i].match(/^Tapete\s*([12])\s*[-–—]\s*(Fundo|T[íi]tulo|Pessoas|Nome\s*(\d+))\s*:?\s*(.*)$/i);
+    const k = L[i].match(/^Kit\s*:?\s*(.*)$/i); if (k) { kit = k[1]; continue; }
+    const m = L[i].match(/^Tapete\s*([12])\s*(?:\(([^)]*)\))?\s*[-–—]\s*(Fundo|T[íi]tulo|Pessoas|Nome\s*(\d+))\s*:?\s*(.*)$/i);
     if (m) {
-      let v = m[4].trim(); if (!v && i + 1 < L.length) v = L[++i];
-      const t = out.t[m[1]], campo = m[2].toLowerCase();
+      out.tams[m[1]] = tamEm(m[2]) || out.tams[m[1]];
+      let v = m[5].trim(); if (!v && i + 1 < L.length) v = L[++i];
+      const t = out.t[m[1]], campo = m[3].toLowerCase();
       if (campo === "fundo") t.fundo = FUNDOS.find(f => f.toLowerCase() === v.toLowerCase()) || v;
       else if (campo.startsWith("t")) t.titulo = v;
       else if (campo === "pessoas") out.pessoas[m[1]] = parseInt(v, 10);
-      else (t.nomes = t.nomes || [])[parseInt(m[3], 10) - 1] = v;
+      else (t.nomes = t.nomes || [])[parseInt(m[4], 10) - 1] = v;
       continue;
     }
-    const g = L[i].match(/^Tapete\s*2\s*:?\s*(.*)$/i);
-    if (g) { let v = g[1].trim(); if (!v && i + 1 < L.length) v = L[++i]; if (/igual/i.test(v)) out.igual = true; }
+    const g = L[i].match(/^Tapete\s*2\s*(?:\(([^)]*)\))?\s*:?\s*(.*)$/i);
+    if (g) {
+      out.tams[2] = tamEm(g[1]) || out.tams[2];
+      let v = g[2].trim(); if (!v && i + 1 < L.length) v = L[++i]; if (/igual/i.test(v)) out.igual = true;
+    }
   }
+  // tapete sem tamanho próprio: vem do kit; senão (formato antigo) do tamanho único do pedido
+  if (kit && (!out.tams[1] || !out.tams[2])) {
+    const g = /\bgrande/i.test(kit), pq = /\bpequeno/i.test(kit), kt = g && pq ? ["90x40", "60x40"] : g ? ["90x40", "90x40"] : pq ? ["60x40", "60x40"] : [];
+    if (kt.length) { out.tams[1] = out.tams[1] || kt[0]; out.tams[2] = out.tams[2] || kt[1]; }
+  }
+  const unico = tamEm(txt);
+  for (const k of [1, 2]) out.tams[k] = out.tams[k] || unico;
   for (const k of [1, 2]) if (out.t[k].nomes) out.t[k].nomes = out.t[k].nomes.filter(v => v != null);
   if (out.igual == null) out.igual = !(out.t[2].fundo || out.t[2].titulo || out.t[2].nomes);
   return out;
 }
 function aplicarLeitura(r) {
   if (r.pedido) st.pedido = r.pedido;
-  if (r.tam) st.tam = r.tam;
+  for (const k of [1, 2]) if (r.tams[k]) st.tam[k] = r.tams[k];
   st.igual = r.igual; st.pessoas = r.pessoas;
   for (const k of [1, 2]) { const t = r.t[k]; if (t.fundo || t.titulo || t.nomes) st.t[k] = { fundo: t.fundo || "Verde", titulo: t.titulo || "", nomes: t.nomes || [] }; }
   if (st.igual) st.t[2] = JSON.parse(JSON.stringify(st.t[1]));
@@ -372,11 +387,11 @@ function aplicarLeitura(r) {
 /* ---------- interface ---------- */
 const arteDe = k => (k === 2 && st.igual) ? st.t[1] : st.t[k];
 function checar(k) {
-  const a = arteDe(k), cfg = TAM[st.tam], ms = [], rot = `Tapete ${k}: `;
+  const a = arteDe(k), cfg = TAM[st.tam[k]], ms = [], rot = `Tapete ${k}: `;
   if (!FUNDOS.includes(a.fundo)) ms.push(["err", rot + `fundo "${a.fundo}" não existe — escolha um dos 4.`]);
   if (!a.titulo.trim()) ms.push(["err", rot + "falta o título."]);
   if (!a.nomes.length) ms.push(["err", rot + "nenhum nome."]);
-  if (a.nomes.length > cfg.max) ms.push(["err", rot + `${a.nomes.length} nomes, mas o ${st.tam} aceita até ${cfg.max}.`]);
+  if (a.nomes.length > cfg.max) ms.push(["err", rot + `${a.nomes.length} nomes${k === 2 && st.igual ? " (igual ao Tapete 1)" : ""}, mas o ${st.tam[k]} aceita até ${cfg.max}.`]);
   const p = st.pessoas && st.pessoas[k];
   if (p && p !== a.nomes.length && !(k === 2 && st.igual)) ms.push(["warn", rot + `o pedido diz ${p} pessoas, mas há ${a.nomes.length} nomes.`]);
   a.nomes.filter(n => n.length > 11).forEach(n => ms.push(["warn", rot + `"${n}" é longo, a letra fica menor nesse boneco.`]));
@@ -386,8 +401,9 @@ function checar(k) {
 
 function pintarForm() {
   $("pedido").value = st.pedido;
-  [...$("tam").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === st.tam));
+  [...$("tam").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === st.tam[st.ativo]));
   [...$("tabs").children].forEach(b => b.setAttribute("aria-pressed", +b.dataset.t === st.ativo));
+  $("tamLbl").textContent = `Tamanho do Tapete ${st.ativo}`;
   $("igualBox").hidden = st.ativo !== 2; $("igual").checked = st.igual;
   const bloqueado = st.ativo === 2 && st.igual;
   $("campos").style.opacity = bloqueado ? .5 : 1;
@@ -399,7 +415,7 @@ function pintarForm() {
   contar();
 }
 function contar() {
-  const a = arteDe(st.ativo), mx = TAM[st.tam].max;
+  const a = arteDe(st.ativo), mx = TAM[st.tam[st.ativo]].max;
   $("cnt").textContent = a.nomes.length; $("max").textContent = mx;
   $("cnt").style.color = a.nomes.length > mx ? "var(--err)" : "";
 }
@@ -408,22 +424,22 @@ let tmr = null;
 function agendar() { clearTimeout(tmr); tmr = setTimeout(previa, 180); }
 function previa() {
   if (!pronto) return;
-  const a = arteDe(st.ativo), cfg = TAM[st.tam];
+  const a = arteDe(st.ativo), tam = st.tam[st.ativo], cfg = TAM[tam];
   const ms = [...checar(1), ...checar(2)];
   $("msgs").innerHTML = ""; ms.forEach(([n, t]) => { const d = document.createElement("div"); d.className = "msg " + n; d.textContent = t; $("msgs").appendChild(d); });
   const W = cm(cfg.w), H = cm(cfg.h);
   $("prevBox").style.aspectRatio = `${cfg.w}/${cfg.h}`;
   $("prevLbl").textContent = `3 · Prévia do Tapete ${st.ativo}`;
-  $("prevInfo").textContent = st.ativo === 2 && st.igual ? "igual ao Tapete 1" : "";
+  $("prevInfo").textContent = (st.ativo === 2 && st.igual ? "igual ao Tapete 1 · " : "") + tam;
   $("spec").innerHTML = `<span>Tamanho <b>${cfg.w} × ${cfg.h} cm</b></span><span>Arquivo <b>${W} × ${H} px</b></span><span><b>300 dpi</b> · dentro do PDF</span>`;
   const temArte = a.nomes.length || a.titulo;
   $("ph").hidden = !!temArte;
   const erros = k => checar(k).some(m => m[0] === "err");
   $("pdf").disabled = erros(1) || erros(2);
-  $("fnpdf").textContent = `${nomePdf()} · ficha + ${st.igual ? "1 arte" : "2 artes"} em tamanho real`;
+  $("fnpdf").textContent = `${nomePdf()} · ficha + ${arquivos().map(nomeArq).join(" + ")}`;
   if (!temArte || !FUNDOS.includes(a.fundo)) { const c = $("cv"); c.width = 1; c.height = 1; return; }
   const box = $("prevBox").clientWidth || 900, s = Math.min(1, (box * Math.min(2, devicePixelRatio || 1)) / W);
-  const art = desenhar({ ...a, nomes: a.nomes.slice(0, cfg.max) }, st.tam, s);
+  const art = desenhar({ ...a, nomes: a.nomes.slice(0, cfg.max) }, tam, s);
   const cv = $("cv"); cv.width = art.width; cv.height = art.height; cv.getContext("2d").drawImage(art, 0, 0);
 }
 
@@ -439,23 +455,31 @@ function msgErro(e) {
 
 /* ---------- PDF do pedido para a fábrica ---------- */
 const nomePdf = () => `Pedido_${st.pedido || "pedido"}_DoceMorada.pdf`;
-const rug = k => st.igual ? "Rug 1 & 2" : "Rug " + k;
 const pausa = () => new Promise(r => setTimeout(r, 30));
+// mesma arte e mesmo tamanho: 1 arquivo, quantidade 2; senão 1 arquivo por tapete
+const umaArte = () => st.igual && st.tam[1] === st.tam[2];
+const arquivos = () => umaArte() ? [1] : [1, 2];
+const nomeArq = k => `${st.pedido || "pedido"}_tapete${k}_${st.tam[k]}.png`;
+const rug = k => umaArte() ? "Rug 1 & 2" : `Rug ${k} (${st.tam[k]})`;
+const cmTxt = k => `${TAM[st.tam[k]].w} x ${TAM[st.tam[k]].h} cm`;
 
 function ficha(doc, ks) {
-  const cfg = TAM[st.tam], M = 15, PW = 210, PH = 297, CW = PW - 2 * M, LW = 52;
+  const M = 15, PW = 210, PH = 297, CW = PW - 2 * M, LW = 52;
   let y = M + 6;
   doc.setFont("helvetica", "bold"); doc.setFontSize(20); doc.text(`ORDER #${st.pedido || "-"} - Doce Morada`, M, y);
   y += 7; doc.setFont("helvetica", "normal"); doc.setFontSize(11); doc.setTextColor(90);
   doc.text("Customized Christmas doormat / Tapete de Natal personalizado", M, y);
   doc.setTextColor(0); y += 7;
   const linhas = [
-    ["Size / Tamanho", `${cfg.w} x ${cfg.h} cm`],
-    ["Quantity / Quantidade", st.igual ? "2 pcs (same design / mesma arte)" : "2 pcs (2 different designs / 2 artes diferentes)"],
+    ["Size / Tamanho", `Rug 1: ${cmTxt(1)}\nRug 2: ${cmTxt(2)}`],
+    ["Quantity / Quantidade", umaArte() ? `2 pcs ${st.tam[1]} (same design / mesma arte)` :
+      st.tam[1] === st.tam[2] ? `2 pcs ${st.tam[1]} (2 different designs / 2 artes diferentes)` :
+      `1 pc ${st.tam[1]} + 1 pc ${st.tam[2]}` + (st.igual ? " (same design, different sizes / mesma arte, tamanhos diferentes)" : "")],
     ["Material", "Crystal Velvet + TPR anti-slip sole"],
     ["Print / Impressão", "Full-color sublimation, full bleed"],
     ["Edge / Borda", "Sewn edge (overlock)"],
-    ["Art file / Arquivo", `Final art on the next page(s), ${cm(cfg.w)} x ${cm(cfg.h)} px, 300 dpi`],
+    ["Art file / Arquivo", ks.map((k, i) => { const c = TAM[st.tam[k]];
+      return `Page ${i + 2}: ${nomeArq(k)} - ${cmTxt(k)}, ${cm(c.w)} x ${cm(c.h)} px, 300 dpi` + (umaArte() ? " - print 2 pcs" : ""); }).join("\n")],
     ["Text / Texto", "ALREADY IN THE IMAGE. Print exactly as is. Do NOT add, retype or change any text.", true],
     ["Names in the art / Nomes na arte", ks.map(k => { const a = arteDe(k); return `${rug(k)} - Title: ${a.titulo.trim()} | Names: ${a.nomes.join(", ")}`; }).join("\n")],
   ];
@@ -474,17 +498,20 @@ function ficha(doc, ks) {
   }
   doc.line(M, y, M + CW, y);
 
-  // prévias: lado a lado no 60x40, uma embaixo da outra no 90x40
-  const rodape = PH - M - 9, cols = ks.length === 2 && st.tam === "60x40" ? 2 : 1, rows = ks.length / cols, gap = 6, lab = 6, r = cfg.w / cfg.h;
+  // prévias na mesma escala (o 90x40 aparece maior que o 60x40): lado a lado se forem 2 de 60x40, senão uma embaixo da outra
+  const rodape = PH - M - 9, gap = 6, lab = 6, cs = ks.map(k => TAM[st.tam[k]]);
+  const lado = ks.length === 2 && cs.every(c => c.w === 60);
   y += 7;
-  const cellW = (CW - gap * (cols - 1)) / cols, cellH = (rodape - 4 - y - gap * (rows - 1)) / rows - lab;
-  const bw = Math.min(cellW, cellH * r), bh = bw / r, x0 = M + (CW - (bw * cols + gap * (cols - 1))) / 2;
+  const alt = rodape - 4 - y, larg = lado ? cs[0].w + cs[1].w : Math.max(...cs.map(c => c.w)), soma = lado ? cs[0].h : cs.reduce((t, c) => t + c.h, 0);
+  const f = Math.min((CW - (lado ? gap : 0)) / larg, (alt - (lado ? lab : ks.length * lab + gap * (ks.length - 1))) / soma);
+  let px = M + (CW - (lado ? larg * f + gap : 0)) / 2, py = y;
   ks.forEach((k, i) => {
-    const px = x0 + (i % cols) * (bw + gap), py = y + Math.floor(i / cols) * (bh + lab + gap);
-    const c = desenhar(arteDe(k), st.tam, 0.25);
-    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text(rug(k), px, py + 4);
-    doc.addImage(c.toDataURL("image/jpeg", 0.9), "JPEG", px, py + lab, bw, bh);
+    const bw = cs[i].w * f, bh = cs[i].h * f, x = lado ? px : M + (CW - bw) / 2;
+    const c = desenhar(arteDe(k), st.tam[k], 0.25);
+    doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.text(rug(k), x, py + 4);
+    doc.addImage(c.toDataURL("image/jpeg", 0.9), "JPEG", x, py + lab, bw, bh);
     c.width = c.height = 1;
+    if (lado) px += bw + gap; else py += lab + bh + gap;
   });
   doc.setFont("helvetica", "italic"); doc.setFontSize(9); doc.setTextColor(90);
   doc.text(doc.splitTextToSize("Preview only. Use the full-resolution art on the next page(s) for printing. Please send a photo before shipping.", CW), PW / 2, rodape, { align: "center" });
@@ -498,14 +525,15 @@ async function baixarPdf() {
   const bar = $("bar"), fill = bar.firstElementChild; bar.hidden = false; fill.style.width = "3%";
   try {
     if (!window.jspdf) throw new Error("o gerador de PDF não carregou. Confira a internet e recarregue a página.");
-    const cfg = TAM[st.tam], ks = st.igual ? [1] : [1, 2], pw = cfg.w * 10, ph = cfg.h * 10;
+    const ks = arquivos();
     msg.textContent = "Montando a ficha do pedido…"; await pausa();
     const doc = new window.jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
     ficha(doc, ks); fill.style.width = "8%";
     for (const [i, k] of ks.entries()) {
       const parte = p => fill.style.width = (8 + (i + p) / ks.length * 88) + "%";
       msg.textContent = `Montando o Tapete ${k} em tamanho real…`; await pausa();
-      const c = desenhar(arteDe(k), st.tam, 1);
+      const cfg = TAM[st.tam[k]], pw = cfg.w * 10, ph = cfg.h * 10;
+      const c = desenhar(arteDe(k), st.tam[k], 1);
       msg.textContent = `Ajustando a nitidez do Tapete ${k}…`;
       await nitidez(c, 2, 0.6, 2, p => parte(p * 0.8));
       msg.textContent = `Colocando o Tapete ${k} no PDF…`; parte(0.85); await pausa();
@@ -548,7 +576,8 @@ function listar() {
     const b = document.createElement("button"); b.type = "button"; b.setAttribute("aria-pressed", p.numero === st.pedido);
     const n = document.createElement("b"), s = document.createElement("span");
     n.textContent = "#" + p.numero;
-    s.textContent = [p.tamanho, new Date(p.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }), p.status].filter(Boolean).join(" · ");
+    const t = ler(p.texto).tams, tam = t[1] === t[2] ? (t[1] ? "2× " + t[1] : "") : `${t[1] || "?"} + ${t[2] || "?"}`;
+    s.textContent = [tam, new Date(p.data).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" }), p.status].filter(Boolean).join(" · ");
     b.append(n, s);
     b.onclick = () => { $("cola").value = p.texto; aplicarLeitura(ler(p.texto)); listar(); };
     l.appendChild(b);
@@ -560,7 +589,7 @@ FUNDOS.forEach(f => { const b = document.createElement("button"); b.type = "butt
   b.style.backgroundImage = `url(p/fundo_${f.toLowerCase()}.jpg)`; b.innerHTML = `<span>${f}</span>`;
   b.onclick = () => { st.t[st.ativo].fundo = f; if (st.ativo === 1 && st.igual) st.t[2].fundo = f; pintarForm(); agendar(); };
   $("fundos").appendChild(b); });
-$("tam").onclick = e => { const b = e.target.closest("button"); if (b) { st.tam = b.dataset.v; pintarForm(); agendar(); } };
+$("tam").onclick = e => { const b = e.target.closest("button"); if (b) { st.tam[st.ativo] = b.dataset.v; pintarForm(); agendar(); } };
 $("tabs").onclick = e => { const b = e.target.closest("button"); if (b) { st.ativo = +b.dataset.t; pintarForm(); agendar(); } };
 $("igual").onchange = e => { st.igual = e.target.checked; if (!st.igual) st.t[2] = JSON.parse(JSON.stringify(st.t[1])); pintarForm(); agendar(); };
 $("pedido").oninput = e => { st.pedido = e.target.value.replace(/\D/g, ""); agendar(); };
@@ -568,8 +597,15 @@ $("titulo").oninput = e => { st.t[st.ativo].titulo = e.target.value; agendar(); 
 $("nomes").oninput = e => { st.t[st.ativo].nomes = e.target.value.split(/\r?\n/).map(v => v.trim()).filter(Boolean); contar(); agendar(); };
 $("nomes").onblur = () => pintarForm();
 $("ler").onclick = () => aplicarLeitura(ler($("cola").value));
+// cada clique mostra um kit: G+P (formato novo), 2 Grandes diferentes (formato novo), 2 Pequenos (formato antigo)
+const EXEMPLOS = [
+  "Pedido #1004\nKit: 1 Grande (90x40) + 1 Pequeno (60x40)\nTapete 1 (Grande 90x40) - Fundo: Verde\nTapete 1 (Grande 90x40) - Título: Casa dos Vovós\nTapete 1 (Grande 90x40) - Pessoas: 5\nTapete 1 (Grande 90x40) - Nome 1: Ana\nTapete 1 (Grande 90x40) - Nome 2: Pedro\nTapete 1 (Grande 90x40) - Nome 3: Clara\nTapete 1 (Grande 90x40) - Nome 4: Lucas\nTapete 1 (Grande 90x40) - Nome 5: Bia\nTapete 2 (Pequeno 60x40): Igual ao Tapete 1",
+  "Pedido #1005\nKit: 2 Grandes (90x40)\nTapete 1 (Grande 90x40) - Fundo: Azul\nTapete 1 (Grande 90x40) - Título: Família Souza\nTapete 1 (Grande 90x40) - Pessoas: 4\nTapete 1 (Grande 90x40) - Nome 1: João\nTapete 1 (Grande 90x40) - Nome 2: Maria\nTapete 1 (Grande 90x40) - Nome 3: Leo\nTapete 1 (Grande 90x40) - Nome 4: Nina\nTapete 2 (Grande 90x40) - Fundo: Vermelho\nTapete 2 (Grande 90x40) - Título: Casa da Praia\nTapete 2 (Grande 90x40) - Pessoas: 2\nTapete 2 (Grande 90x40) - Nome 1: Rui\nTapete 2 (Grande 90x40) - Nome 2: Sol",
+  "Pedido #1000 · 60x40cm\nTapete 1 - Fundo: Verde\nTapete 1 - Título: Casa dos Vovós\nTapete 1 - Pessoas: 3\nTapete 1 - Nome 1: Ana\nTapete 1 - Nome 2: Pedro\nTapete 1 - Nome 3: Clara\nTapete 2: Igual ao Tapete 1",
+];
+let exN = 0;
 $("exemplo").onclick = () => {
-  $("cola").value = "Pedido #1000 · 60x40cm\nTapete 1 - Fundo: Verde\nTapete 1 - Título: Casa dos Vovós\nTapete 1 - Pessoas: 3\nTapete 1 - Nome 1: Ana\nTapete 1 - Nome 2: Pedro\nTapete 1 - Nome 3: Clara\nTapete 2: Igual ao Tapete 1";
+  $("cola").value = EXEMPLOS[exN++ % EXEMPLOS.length];
   aplicarLeitura(ler($("cola").value));
 };
 $("pdf").onclick = baixarPdf;
