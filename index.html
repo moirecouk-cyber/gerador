@@ -165,6 +165,7 @@ const DPI = 300;
 const TAM = { "60x40": { w: 60, h: 40, max: 8, fila: 5 }, "90x40": { w: 90, h: 40, max: 15, fila: 8 } };
 const ORDEM = ["vermelho", "verde", "azul", "amarelo", "rena", "cartola", "roxo"]; // rosa fora até ser refeito
 const FUNDOS = ["Verde", "Vermelho", "Azul", "Creme"];
+const BONECO_NOME = { "suéter vermelho": "vermelho", "gorro verde": "verde", "protetor azul": "azul", "gorro amarelo": "amarelo", "rena": "rena", "cartola": "cartola", "presente": "roxo" };
 const PIN_FUNDOS = ["Vermelho", "Creme"], BORDAS = ["Verde", "Vermelha", "Creme"];
 const PIN_ARV = ["xadrez", "bolas", "neve", "verde_claro"], PIN_MAX = { "60x40": 4, "90x40": 6 };
 const fundosDe = a => a.modelo === "Pinheiros" ? PIN_FUNDOS : FUNDOS;
@@ -281,7 +282,7 @@ function desenhar(arte, tam, s) {
     let i = 0;
     for (let fl = 0; fl < filas; fl++) {
       const q = Math.min(porFila, n - i), bs = [];
-      for (let k = 0; k < q; k++) bs.push(ORDEM[(i + k) % ORDEM.length]);
+      for (let k = 0; k < q; k++) { const esc = arte.bonecos && arte.bonecos[i + k]; bs.push(ORDEM.includes(esc) ? esc : ORDEM[(i + k) % ORDEM.length]); }
       const lim = Math.min(filaH * 0.97, H * 0.5);
       let ref = Math.min(...bs.map(b => lim * META[b].corpo / META[b].h));
       ref = Math.min(ref, areaW / (q + 0.3 * (q - 1)));
@@ -419,15 +420,18 @@ function ler(txt) {
   let kit = null;
   for (let i = 0; i < L.length; i++) {
     const k = L[i].match(/^Kit\s*:?\s*(.*)$/i); if (k) { kit = k[1]; continue; }
-    const m = L[i].match(/^Tapete\s*([12])\s*(?:\(([^)]*)\))?\s*[-–—]\s*(Fundo|T[íi]tulo|Pessoas|Nome\s*(\d+))\s*:?\s*(.*)$/i);
+    const m = L[i].match(/^Tapete\s*([12])\s*(?:\(([^)]*)\))?\s*[-–—]\s*(Modelo|Fundo|Borda|T[íi]tulo|Pessoas|Pinheiros|Nome\s*(\d+)|Pinheiro\s*(\d+)|Boneco\s*(\d+))\s*:?\s*(.*)$/i);
     if (m) {
       out.tams[m[1]] = tamEm(m[2]) || out.tams[m[1]];
-      let v = m[5].trim(); if (!v && i + 1 < L.length) v = L[++i];
+      let v = m[7].trim(); if (!v && i + 1 < L.length) v = L[++i];
       const t = out.t[m[1]], campo = m[3].toLowerCase();
-      if (campo === "fundo") t.fundo = FUNDOS.find(f => f.toLowerCase() === v.toLowerCase()) || v;
+      if (campo === "modelo") t.modelo = /pinheiro/i.test(v) ? "Pinheiros" : "Bonecos";
+      else if (campo === "fundo") t.fundo = [...FUNDOS, ...PIN_FUNDOS].find(f => f.toLowerCase() === v.toLowerCase()) || v;
+      else if (campo === "borda") t.borda = BORDAS.find(f => f.toLowerCase() === v.toLowerCase()) || v;
       else if (campo.startsWith("t")) t.titulo = v;
-      else if (campo === "pessoas") out.pessoas[m[1]] = parseInt(v, 10);
-      else (t.nomes = t.nomes || [])[parseInt(m[4], 10) - 1] = v;
+      else if (campo === "pessoas" || campo === "pinheiros") out.pessoas[m[1]] = parseInt(v, 10);
+      else if (campo.startsWith("boneco")) (t.bonecos = t.bonecos || [])[parseInt(m[6], 10) - 1] = BONECO_NOME[v.toLowerCase()] || "";
+      else (t.nomes = t.nomes || [])[parseInt(m[4] || m[5], 10) - 1] = v;
       continue;
     }
     const g = L[i].match(/^Tapete\s*2\s*(?:\(([^)]*)\))?\s*:?\s*(.*)$/i);
@@ -451,7 +455,7 @@ function aplicarLeitura(r) {
   if (r.pedido) st.pedido = r.pedido;
   for (const k of [1, 2]) if (r.tams[k]) st.tam[k] = r.tams[k];
   st.igual = r.igual; st.pessoas = r.pessoas;
-  for (const k of [1, 2]) { const t = r.t[k]; if (t.fundo || t.titulo || t.nomes) st.t[k] = { modelo: "Bonecos", borda: "Verde", fundo: t.fundo || "Verde", titulo: t.titulo || "", nomes: t.nomes || [] }; }
+  for (const k of [1, 2]) { const t = r.t[k]; if (t.fundo || t.titulo || t.nomes) st.t[k] = { modelo: t.modelo || "Bonecos", borda: t.borda || "Verde", fundo: t.fundo || (t.modelo === "Pinheiros" ? "Vermelho" : "Verde"), titulo: t.titulo || "", nomes: t.nomes || [], bonecos: t.bonecos || [] }; }
   if (st.igual) st.t[2] = JSON.parse(JSON.stringify(st.t[1]));
   st.ativo = 1; pintarForm(); agendar();
 }
