@@ -133,6 +133,7 @@ details[open]{display:flex;flex-direction:column;gap:10px}
         <label>Modelo<div class="seg" id="modelo"><button type="button" data-v="Bonecos">Bonecos</button><button type="button" data-v="Pinheiros">Pinheiros</button></div></label>
         <label>Fundo<div class="sw" id="fundos"></div></label>
         <label id="bordaBox">Borda<div class="sw" id="bordas"></div></label>
+        <label class="chk" id="neveBox"><input type="checkbox" id="neve"> Chão de neve embaixo dos bonecos</label>
         <label>Título<input type="text" id="titulo" maxlength="40"></label>
         <label><span class="row" style="justify-content:space-between">Nomes <span class="hint"><span class="count" id="cnt">0</span> de <span id="max">8</span> · <span id="porLinha">um por linha</span></span></span>
           <textarea id="nomes"></textarea>
@@ -176,7 +177,7 @@ const $ = id => document.getElementById(id);
 
 const A = {}; let META = null, pronto = false;
 const st = { pedido: "", tam: { 1: "60x40", 2: "60x40" }, ativo: 1, igual: true,
-  t: { 1: { modelo: "Bonecos", fundo: "Verde", borda: "Verde", titulo: "", nomes: [] }, 2: { modelo: "Bonecos", fundo: "Verde", borda: "Verde", titulo: "", nomes: [] } } };
+  t: { 1: { modelo: "Bonecos", fundo: "Verde", borda: "Verde", neve: true, titulo: "", nomes: [] }, 2: { modelo: "Bonecos", fundo: "Verde", borda: "Verde", neve: true, titulo: "", nomes: [] } } };
 
 /* ---------- peças ---------- */
 const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(src); i.src = src; });
@@ -228,6 +229,68 @@ function cabe(x, fonte, txt, maxW, ini, s) {
   return f;
 }
 
+/* chão de neve: tudo em medidas relativas, então a prévia e o arquivo de impressão saem iguais */
+function sorteio(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+function chaoDeNeve(x, W, H, filas) {
+  filas.forEach((f, r) => {
+    const ultima = r === filas.length - 1, alt = Math.max(...f.alts), u = alt / 100, fase = r * 1.7;
+    const centros = f.bs.map((b, k) => f.cx0 + k * (f.ref + f.gap));
+    // montinho embaixo de cada boneco, para eles parecerem assentados na neve
+    const monte = px => centros.reduce((t, c) => t + 3 * u * Math.exp(-Math.pow((px - c) / (0.5 * f.ref), 2)), 0);
+    const onda = px => { const t = px / W * Math.PI * 2;
+      return 3.5 * u * (0.55 * Math.sin(t * 1.3 + fase) + 0.3 * Math.sin(t * 3.7 + 1.1 + fase) + 0.15 * Math.sin(t * 7.9 + 2.3 + fase)); };
+    // última fileira: chão de ponta a ponta até o fim do tapete; fileiras de cima: um monte só embaixo do grupo
+    let xa, xb, topoEm, fundoEm;
+    if (ultima) {
+      xa = -0.02 * W; xb = 1.02 * W;
+      topoEm = px => f.base - 9 * u + onda(px) - monte(px); fundoEm = () => H;
+    } else {
+      xa = centros[0] - f.ref * 0.95; xb = centros[centros.length - 1] + f.ref * 0.95;
+      const meio = (xa + xb) / 2, metade = (xb - xa) / 2;
+      const env = px => Math.sqrt(Math.max(0, 1 - Math.pow((px - meio) / metade, 2)));
+      topoEm = px => f.base + 3 * u - env(px) * (12 * u + monte(px) - 0.3 * onda(px));
+      fundoEm = px => f.base + 3 * u + env(px) * 4 * u;
+    }
+    const N = 180, pts = [];
+    for (let i = 0; i <= N; i++) { const px = xa + i / N * (xb - xa); pts.push([px, topoEm(px)]); }
+    const topo = Math.min(...pts.map(p => p[1]));
+    const caminho = () => {
+      x.beginPath(); pts.forEach(([px, py], i) => i ? x.lineTo(px, py) : x.moveTo(px, py));
+      for (let i = N; i >= 0; i--) x.lineTo(pts[i][0], fundoEm(pts[i][0]));
+      x.closePath();
+    };
+    x.save();
+    // halo azulado acima da borda, para a neve se destacar do fundo
+    x.shadowColor = `rgba(12,32,48,${ultima ? 0.38 : 0.2})`; x.shadowBlur = 5 * u; x.shadowOffsetY = -1.2 * u;
+    let g;
+    if (ultima) { g = x.createLinearGradient(0, topo, 0, Math.min(H, topo + 40 * u));
+      g.addColorStop(0, "#ffffff"); g.addColorStop(0.35, "#eef4fa"); g.addColorStop(1, "#cfdeeb"); }
+    else { // monte de cima: a base some no fundo, sem borda dura
+      g = x.createLinearGradient(0, topo, 0, f.base + 7 * u);
+      g.addColorStop(0, "#ffffff"); g.addColorStop(0.55, "#eef4fa"); g.addColorStop(0.8, "rgba(225,236,245,0.75)"); g.addColorStop(1, "rgba(225,236,245,0)"); }
+    caminho(); x.fillStyle = g; x.fill(); semSombra(x);
+    x.clip();
+    // dunas: sombras azuladas suaves
+    const rnd = sorteio(9137 + r * 101);
+    for (let d = 0; d < 9; d++) {
+      const cx = xa + rnd() * (xb - xa), cy = topoEm(cx) + (3 + rnd() * 10) * u, rx = (0.06 + rnd() * 0.08) * W, ry = (2 + rnd() * 3) * u;
+      x.save(); x.translate(cx, cy); x.scale(1, ry / rx);
+      const dg = x.createRadialGradient(0, 0, 0, 0, 0, rx);
+      dg.addColorStop(0, "rgba(140,170,200,0.22)"); dg.addColorStop(1, "rgba(140,170,200,0)");
+      x.fillStyle = dg; x.beginPath(); x.arc(0, 0, rx, 0, Math.PI * 2); x.fill(); x.restore();
+    }
+    // brilhinhos
+    for (let b = 0; b < 70; b++) {
+      const px = xa + rnd() * (xb - xa), py = topoEm(px) + (0.8 + rnd() * 14) * u, rr = (0.12 + rnd() * 0.22) * u;
+      x.fillStyle = `rgba(255,255,255,${0.55 + rnd() * 0.45})`; x.beginPath(); x.arc(px, py, rr, 0, Math.PI * 2); x.fill();
+    }
+    x.restore();
+    // brilho na crista
+    x.save(); x.beginPath(); pts.forEach(([px, py], i) => i ? x.lineTo(px, py + 0.25 * u) : x.moveTo(px, py + 0.25 * u));
+    x.strokeStyle = "rgba(255,255,255,0.9)"; x.lineWidth = 0.45 * u; x.lineJoin = "round"; x.stroke(); x.restore();
+  });
+}
+
 function desenhar(arte, tam, s) {
   const cfg = TAM[tam];
   const W = Math.round(cm(cfg.w) * s), H = Math.round(cm(cfg.h) * s);
@@ -247,8 +310,44 @@ function desenhar(arte, tam, s) {
   }
   vx.putImageData(im, 0, 0); x.drawImage(vc, 0, 0, W, H);
 
-  // 3. moldura
+  // 3. medidas do título e das fileiras de bonecos (antes da moldura, para a neve ficar por baixo dela)
   const T = Math.round(H * 0.13), xh = Math.round(H * 0.035), off = -Math.round(T * 0.18);
+  const seg = T * 1.05, tit = (arte.titulo || "").trim().toUpperCase();
+  const fCin = f => `700 ${f}px Cinzel, Georgia, serif`;
+  let areaTop = seg + H * 0.06, titulo = null;
+  if (tit) {
+    x.font = fCin(cabe(x, fCin, tit, W * 0.6, Math.round(H * 0.085), s));
+    x.textAlign = "left"; x.textBaseline = "alphabetic";
+    const m = x.measureText(tit), asc = m.fontBoundingBoxAscent || m.actualBoundingBoxAscent;
+    const base = seg + H * 0.06 + asc, tx = W / 2 - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2;
+    titulo = { font: x.font, tx, base };
+    areaTop = base + m.actualBoundingBoxDescent + H * 0.03;
+  }
+  const areaBot = H - xh - T;
+  const n = nomes.length, filas = [];
+  if (n) {
+    const porFila = n <= cfg.fila ? n : Math.ceil(n / 2), nf = Math.ceil(n / porFila);
+    const areaW = W - 2 * seg - cm(1) * s, filaH = (areaBot - areaTop) / nf;
+    let i = 0;
+    for (let fl = 0; fl < nf; fl++) {
+      const q = Math.min(porFila, n - i), bs = [];
+      for (let k = 0; k < q; k++) { const esc = arte.bonecos && arte.bonecos[i + k]; bs.push(ORDEM.includes(esc) ? esc : ORDEM[(i + k) % ORDEM.length]); }
+      const lim = Math.min(filaH * 0.97, H * 0.5);
+      let ref = Math.min(...bs.map(b => lim * META[b].corpo / META[b].h));
+      ref = Math.min(ref, areaW / (q + 0.3 * (q - 1)));
+      const gap = ref * 0.3, fat = bs.map(b => ref / META[b].corpo);
+      const alts = bs.map((b, k) => META[b].h * fat[k]);
+      const cx0 = (W - (ref * q + gap * (q - 1))) / 2 + ref / 2;
+      const base = areaTop + filaH * (fl + 1) - (filaH - Math.max(...alts)) / 2;
+      filas.push({ i0: i, q, bs, ref, gap, fat, alts, cx0, base });
+      i += q;
+    }
+  }
+
+  // 4. chão de neve (atrás dos bonecos, por baixo da moldura)
+  if (arte.neve !== false && filas.length) chaoDeNeve(x, W, H, filas);
+
+  // 5. moldura
   x.drawImage(faixa(A.xadrez, W, xh), 0, H - xh);
   const topo = faixa(A.guirlanda, W, T), lado = girar90(faixa(A.guirlanda, H, T));
   sombra(x, .45, 12 * s, 6 * s, 10 * s);
@@ -260,36 +359,16 @@ function desenhar(arte, tam, s) {
   poe(x, cc, W - cs + off, off); poe(x, cc, -off, off, "fx");
   poe(x, cc, W - cs + off, H - xh - chh - off, "fy"); poe(x, cc, -off, H - xh - chh - off, "r180");
 
-  // 4. título
-  const seg = T * 1.05, tit = (arte.titulo || "").trim().toUpperCase();
-  let areaTop = seg + H * 0.06;
-  if (tit) {
-    const fCin = f => `700 ${f}px Cinzel, Georgia, serif`;
-    x.font = fCin(cabe(x, fCin, tit, W * 0.6, Math.round(H * 0.085), s));
-    x.textAlign = "left"; x.textBaseline = "alphabetic";
-    const m = x.measureText(tit), asc = m.fontBoundingBoxAscent || m.actualBoundingBoxAscent;
-    const base = seg + H * 0.06 + asc, tx = W / 2 - (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2;
-    sombra(x, .67, 8 * s, 5 * s, 8 * s); x.fillStyle = COR_TIT[arte.fundo]; x.fillText(tit, tx, base); semSombra(x);
-    areaTop = base + m.actualBoundingBoxDescent + H * 0.03;
+  // 6. título
+  if (titulo) {
+    x.font = titulo.font; x.textAlign = "left"; x.textBaseline = "alphabetic";
+    sombra(x, .67, 8 * s, 5 * s, 8 * s); x.fillStyle = COR_TIT[arte.fundo]; x.fillText(tit, titulo.tx, titulo.base); semSombra(x);
   }
-  const areaBot = H - xh - T;
 
-  // 5. bonecos + nomes
-  const n = nomes.length;
+  // 7. bonecos + nomes
   if (n) {
-    const porFila = n <= cfg.fila ? n : Math.ceil(n / 2), filas = Math.ceil(n / porFila);
-    const areaW = W - 2 * seg - cm(1) * s, filaH = (areaBot - areaTop) / filas;
     let i = 0;
-    for (let fl = 0; fl < filas; fl++) {
-      const q = Math.min(porFila, n - i), bs = [];
-      for (let k = 0; k < q; k++) { const esc = arte.bonecos && arte.bonecos[i + k]; bs.push(ORDEM.includes(esc) ? esc : ORDEM[(i + k) % ORDEM.length]); }
-      const lim = Math.min(filaH * 0.97, H * 0.5);
-      let ref = Math.min(...bs.map(b => lim * META[b].corpo / META[b].h));
-      ref = Math.min(ref, areaW / (q + 0.3 * (q - 1)));
-      const gap = ref * 0.3, fat = bs.map(b => ref / META[b].corpo);
-      const alts = bs.map((b, k) => META[b].h * fat[k]);
-      const cx0 = (W - (ref * q + gap * (q - 1))) / 2 + ref / 2;
-      const base = areaTop + filaH * (fl + 1) - (filaH - Math.max(...alts)) / 2;
+    for (const { q, bs, ref, gap, fat, alts, cx0, base } of filas) {
       for (let k = 0; k < q; k++) {
         const b = bs[k], mt = META[b], f = fat[k], h = alts[k], w = mt.w * f;
         const px = Math.round(cx0 + k * (ref + gap) - mt.centro * f), py = Math.round(base - h);
@@ -455,7 +534,7 @@ function aplicarLeitura(r) {
   if (r.pedido) st.pedido = r.pedido;
   for (const k of [1, 2]) if (r.tams[k]) st.tam[k] = r.tams[k];
   st.igual = r.igual; st.pessoas = r.pessoas;
-  for (const k of [1, 2]) { const t = r.t[k]; if (t.fundo || t.titulo || t.nomes) st.t[k] = { modelo: t.modelo || "Bonecos", borda: t.borda || "Verde", fundo: t.fundo || (t.modelo === "Pinheiros" ? "Vermelho" : "Verde"), titulo: t.titulo || "", nomes: t.nomes || [], bonecos: t.bonecos || [] }; }
+  for (const k of [1, 2]) { const t = r.t[k]; if (t.fundo || t.titulo || t.nomes) st.t[k] = { modelo: t.modelo || "Bonecos", borda: t.borda || "Verde", neve: st.t[k].neve !== false, fundo: t.fundo || (t.modelo === "Pinheiros" ? "Vermelho" : "Verde"), titulo: t.titulo || "", nomes: t.nomes || [], bonecos: t.bonecos || [] }; }
   if (st.igual) st.t[2] = JSON.parse(JSON.stringify(st.t[1]));
   st.ativo = 1; pintarForm(); agendar();
 }
@@ -488,6 +567,7 @@ function pintarForm() {
   pintarSw(a);
   [...$("modelo").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === a.modelo));
   $("bordaBox").hidden = a.modelo !== "Pinheiros";
+  $("neveBox").hidden = a.modelo === "Pinheiros"; $("neve").checked = a.neve !== false;
   $("porLinha").textContent = a.modelo === "Pinheiros" ? "um pinheiro por linha (ex.: Ju e Luca)" : "um por linha";
   $("titulo").value = a.titulo;
   if (document.activeElement !== $("nomes")) $("nomes").value = a.nomes.join("\n");
@@ -684,6 +764,7 @@ BORDAS.forEach(f => { const b = document.createElement("button"); b.type = "butt
 $("modelo").onclick = e => { const b = e.target.closest("button"); if (!b) return; const a = st.t[st.ativo];
   a.modelo = b.dataset.v; if (!fundosDe(a).includes(a.fundo)) a.fundo = fundosDe(a)[0];
   if (st.ativo === 1 && st.igual) st.t[2] = JSON.parse(JSON.stringify(a)); pintarForm(); agendar(); };
+$("neve").onchange = e => { st.t[st.ativo].neve = e.target.checked; if (st.ativo === 1 && st.igual) st.t[2].neve = e.target.checked; agendar(); };
 $("tam").onclick = e => { const b = e.target.closest("button"); if (b) { st.tam[st.ativo] = b.dataset.v; pintarForm(); agendar(); } };
 $("tabs").onclick = e => { const b = e.target.closest("button"); if (b) { st.ativo = +b.dataset.t; pintarForm(); agendar(); } };
 $("igual").onchange = e => { st.igual = e.target.checked; if (!st.igual) st.t[2] = JSON.parse(JSON.stringify(st.t[1])); pintarForm(); agendar(); };
