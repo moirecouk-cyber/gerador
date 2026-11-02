@@ -128,7 +128,10 @@ details[open]{display:flex;flex-direction:column;gap:10px}
         </label>
       </div>
       <div class="tabs" id="tabs"><button data-t="1">Tapete 1</button><button data-t="2">Tapete 2</button></div>
-      <label class="chk" id="igualBox"><input type="checkbox" id="igual"> Igual ao Tapete 1</label>
+      <div id="igualBox" style="display:flex;flex-direction:column;gap:4px">
+        <label class="chk"><input type="checkbox" id="igual"> Igual ao Tapete 1</label>
+        <span class="hint" id="igualHint">Para fazer o Tapete 2 diferente (outro modelo, fundo, título ou nomes), é só mudar aqui embaixo: ele se separa do Tapete 1 sozinho.</span>
+      </div>
       <div id="campos" style="display:flex;flex-direction:column;gap:14px">
         <label>Modelo<div class="seg" id="modelo"><button type="button" data-v="Bonecos">Bonecos</button><button type="button" data-v="Pinheiros">Pinheiros</button></div></label>
         <label>Fundo<div class="sw" id="fundos"></div></label>
@@ -559,10 +562,7 @@ function pintarForm() {
   [...$("tam").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === st.tam[st.ativo]));
   [...$("tabs").children].forEach(b => b.setAttribute("aria-pressed", +b.dataset.t === st.ativo));
   $("tamLbl").textContent = `Tamanho do Tapete ${st.ativo}`;
-  $("igualBox").hidden = st.ativo !== 2; $("igual").checked = st.igual;
-  const bloqueado = st.ativo === 2 && st.igual;
-  $("campos").style.opacity = bloqueado ? .5 : 1;
-  [...$("campos").querySelectorAll("input,textarea,button")].forEach(e => e.disabled = bloqueado);
+  $("igualBox").hidden = st.ativo !== 2; $("igual").checked = st.igual; $("igualHint").hidden = !st.igual;
   const a = arteDe(st.ativo);
   pintarSw(a);
   [...$("modelo").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === a.modelo));
@@ -744,6 +744,8 @@ function listar() {
 }
 
 /* ---------- eventos ---------- */
+// no Tapete 2, qualquer mudança separa ele do Tapete 1 (começa como cópia do 1 e recebe a mudança)
+const soltar = () => { if (st.ativo !== 2 || !st.igual) return false; st.igual = false; st.t[2] = JSON.parse(JSON.stringify(st.t[1])); return true; };
 function pintarSw(a) {
   const pin = a.modelo === "Pinheiros", lista = pin ? PIN_FUNDOS : FUNDOS;
   const fb = $("fundos");
@@ -751,26 +753,26 @@ function pintarSw(a) {
     fb.innerHTML = ""; fb.dataset.m = a.modelo;
     lista.forEach(f => { const b = document.createElement("button"); b.type = "button"; b.dataset.v = f;
       b.style.backgroundImage = `url(p/${pin ? "pin_" : ""}fundo_${f.toLowerCase()}.jpg)`; b.innerHTML = `<span>${f}</span>`;
-      b.onclick = () => { st.t[st.ativo].fundo = f; if (st.ativo === 1 && st.igual) st.t[2].fundo = f; pintarForm(); agendar(); };
+      b.onclick = () => { soltar(); st.t[st.ativo].fundo = f; if (st.ativo === 1 && st.igual) st.t[2].fundo = f; pintarForm(); agendar(); };
       fb.appendChild(b); });
   }
-  [...fb.children].forEach(b => { b.setAttribute("aria-pressed", b.dataset.v === a.fundo); b.disabled = st.ativo === 2 && st.igual; });
+  [...fb.children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === a.fundo));
   [...$("bordas").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.v === a.borda));
 }
 BORDAS.forEach(f => { const b = document.createElement("button"); b.type = "button"; b.dataset.v = f;
   b.style.backgroundImage = `url(p/pin_borda_${f.toLowerCase()}.png)`; b.style.backgroundColor = "var(--sunk)"; b.innerHTML = `<span>${f}</span>`;
-  b.onclick = () => { st.t[st.ativo].borda = f; if (st.ativo === 1 && st.igual) st.t[2].borda = f; pintarForm(); agendar(); };
+  b.onclick = () => { soltar(); st.t[st.ativo].borda = f; if (st.ativo === 1 && st.igual) st.t[2].borda = f; pintarForm(); agendar(); };
   $("bordas").appendChild(b); });
-$("modelo").onclick = e => { const b = e.target.closest("button"); if (!b) return; const a = st.t[st.ativo];
+$("modelo").onclick = e => { const b = e.target.closest("button"); if (!b) return; soltar(); const a = st.t[st.ativo];
   a.modelo = b.dataset.v; if (!fundosDe(a).includes(a.fundo)) a.fundo = fundosDe(a)[0];
   if (st.ativo === 1 && st.igual) st.t[2] = JSON.parse(JSON.stringify(a)); pintarForm(); agendar(); };
-$("neve").onchange = e => { st.t[st.ativo].neve = e.target.checked; if (st.ativo === 1 && st.igual) st.t[2].neve = e.target.checked; agendar(); };
+$("neve").onchange = e => { if (soltar()) pintarForm(); st.t[st.ativo].neve = e.target.checked; if (st.ativo === 1 && st.igual) st.t[2].neve = e.target.checked; agendar(); };
 $("tam").onclick = e => { const b = e.target.closest("button"); if (b) { st.tam[st.ativo] = b.dataset.v; pintarForm(); agendar(); } };
 $("tabs").onclick = e => { const b = e.target.closest("button"); if (b) { st.ativo = +b.dataset.t; pintarForm(); agendar(); } };
 $("igual").onchange = e => { st.igual = e.target.checked; if (!st.igual) st.t[2] = JSON.parse(JSON.stringify(st.t[1])); pintarForm(); agendar(); };
 $("pedido").oninput = e => { st.pedido = e.target.value.replace(/\D/g, ""); agendar(); };
-$("titulo").oninput = e => { st.t[st.ativo].titulo = e.target.value; agendar(); };
-$("nomes").oninput = e => { st.t[st.ativo].nomes = e.target.value.split(/\r?\n/).map(v => v.trim()).filter(Boolean); contar(); agendar(); };
+$("titulo").oninput = e => { const v = e.target.value; if (soltar()) { pintarForm(); e.target.value = v; } st.t[st.ativo].titulo = v; agendar(); };
+$("nomes").oninput = e => { const v = e.target.value; if (soltar()) { pintarForm(); e.target.value = v; } st.t[st.ativo].nomes = v.split(/\r?\n/).map(v => v.trim()).filter(Boolean); contar(); agendar(); };
 $("nomes").onblur = () => pintarForm();
 $("ler").onclick = () => aplicarLeitura(ler($("cola").value));
 // cada clique mostra um kit: G+P (formato novo), 2 Grandes diferentes (formato novo), 2 Pequenos (formato antigo)
